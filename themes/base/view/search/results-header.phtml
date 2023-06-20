@@ -1,0 +1,31 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchPage
+ * @var \AdvancedSearch\Query $query
+ * @var \AdvancedSearch\Response $response
+ * @var \Omeka\Api\Representation\ItemSetRepresentation $itemSet
+ * @var int $documentCount
+ * @var string $pagination
+ */
+
+$plugins = $this->getHelperPluginManager();
+$translate = $plugins->get('translate');
+$translatePlural = $plugins->get('translatePlural');
+?>
+
+<div class="level">
+  <div class="level-left">
+    <?= $pagination ?>
+  </div>
+  <div class="level-right">
+    <div class="level-item">
+        <?= $this->searchSortSelector($query, $searchPage->subSetting('sort', 'fields')) ?>
+    </div>
+    <div class="level-item">
+        <a class="search-view-type search-view-type-list" href="#"><?= $translate('lijst') ?></a>
+        |
+        <a class="search-view-type search-view-type-grid" href="#"><?= $translate('grid') ?></a>
+    </div>
+  </div>
+</div>

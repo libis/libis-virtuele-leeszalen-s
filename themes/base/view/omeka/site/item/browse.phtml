@@ -1,0 +1,179 @@
+<?php
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+$this->htmlElement('body')->appendAttribute('class', 'item resource browse');
+
+$query = $this->params()->fromQuery();
+$itemSetShow = isset($itemSet);
+if ($itemSetShow):
+    $this->htmlElement('body')->appendAttribute('class', 'item-set');
+    $query['item_set_id'] = $itemSet->id();
+endif;
+$news= false;
+$template_id = '';
+if(isset($_GET['resource_template_id'])):
+  $template_id = $_GET['resource_template_id'];
+endif;
+if($template_id == 2):
+  $news = true;
+endif;
+$sortHeadings = [
+    [
+        'label' => $translate('Title'),
+        'value' => 'dcterms:title'
+    ],
+    [
+        'label' => $translate('Identifier'),
+        'value' => 'dcterms:identifier'
+    ],
+    [
+        'label' => $translate('Class'),
+        'value' => 'resource_class_label'
+    ],
+    [
+        'label' => $translate('Created'),
+        'value' => 'created'
+    ],
+];
+?>
+<section class="section breadcrumb-section">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+      <ul>
+        <li><a href="<?php echo $site->url();?>">Home</a></li>
+        <?php if ($itemSetShow):?>
+          <li><a href="<?php echo $site->url();?>/page/collections"><?php echo $translate('Collections'); ?></a></li>
+          <li><?php echo $itemSet->displayTitle(); ?></li>
+        <?php elseif ($news):?>
+          <li><?php echo sprintf($this->translate('News')); ?></li>
+        <?php else:?>
+          <li><?php echo sprintf($this->translate('Items')); ?></li>
+        <?php endif;?>
+      </ul>
+    </nav>
+    <?php if ($itemSetShow): ?>
+      <h1 class="title is-2 is-family-secondary" style="margin-bottom:1rem;"><?php echo $itemSet->displayTitle(); ?></h1>
+    <?php endif;?>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    <?php if ($itemSetShow): ?>
+        <div class="columns is-multiline">
+          <?if($itemSet->value('dcterms:description') || $itemSet->value('dcterms:provenance')):?>
+            <div class="column is-7">
+              <?if($itemSet->value('dcterms:description')):?>
+              <div class="content">
+                <?php echo $itemSet->value('dcterms:description'); ?>
+              </div>
+              <?php endif;?>
+            </div>
+          <?php endif;?>
+          
+          <?php $vls = $itemSet->displayValues();?>
+
+          <?php if(trim($vls)):?>
+            <div class="column is-7" >
+              <div class="content metadata-box">
+                <div class="metadata">
+                    <?php echo $vls; ?>
+                </div>
+              </div>
+            </div>
+          <?php endif;?>
+      </div>
+      <div class="item-set-items">
+    <?php elseif ($news):?>
+        <h1 class="title is-2 is-family-secondary"><?php echo $translate('Nieuws'); ?></h1>
+    <?php else: ?>
+        <h1 class="title is-2 is-family-secondary"><?php echo $translate('Items'); ?></h1>
+    <?php endif; ?>
+
+    <?php //echo $this->searchFilters(); ?>
+
+    <?php if(sizeof($items) > 0):?>
+      <div class="level" style="margin:10px 0;">
+        <div class="level-left">
+
+        </div>
+        <div class="level-right">
+          <div class="level-item">
+            <?php echo $this->sortSelector($sortHeadings); ?>
+          </div>
+
+         </div>
+      </div>
+
+      <?php $this->trigger('view.browse.before'); ?>
+      <div class="columns is-multiline">
+        <?php
+        $headingTerm = $this->siteSetting('browse_heading_property_term');
+        $bodyTerm = $this->siteSetting('browse_body_property_term');
+        foreach ($items as $item):
+            $heading = $headingTerm ? $item->value($headingTerm, ['default' => $translate('[Untitled]')]) : $item->displayTitle();
+            $body = $bodyTerm ? $item->value($bodyTerm) : $item->displayDescription();
+            $media = $item->media();
+            if($media):
+                $mediaurl = str_replace('http:', '', $media[0]->thumbnailUrl('medium'));
+            else:
+              $mediaurl = "";
+            endif;
+        ?>
+        <div class="column is-4">
+          <div class="card equal-height">
+            <a class="card-link-wrapper" href="<?php echo $item->url();?>">
+              <div class="card-bg card-bg-img-2"
+                style="background:url(<?php echo  $mediaurl;?>) no-repeat center 20%;background-color:#7fb5b2;background-size: cover;"
+                >
+              </div>
+              <header class="card-header">
+                <p class="card-header-title title is-5 is-family-secondary">
+                    <span><?php echo $heading;?></span>
+                </p>
+              </header>
+              <div class="card-content">
+                <div class="content">
+                  <?php if ($body): ?>
+                    <p>
+                      <?php $trunc = implode(" ", array_slice(explode(" ", $body), 0, 21)); ?>
+                      <?php if(strlen($body) != strlen($trunc)):?>
+                        <?php echo $trunc.' ...';?>
+                      <?php else:?>
+                        <?php echo $trunc;?>
+                      <?php endif;?>
+                    </p>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+        <?php endforeach; ?>
+      </div>
+      <?php echo ($itemSetShow) ? '</div>' : ''; ?>
+      <?php $this->trigger('view.browse.after'); ?>
+
+      <?php if ($itemSetShow): ?>
+
+        <div class="has-text-right">
+          <a href="<?php echo $site->url().'/objects?q=&limit[item_set_id][0]='.$itemSet->id();?>" class="button is-primary">
+            <span><?php echo "View all objects in this collection";?></span>
+            <span class="icon is-small">
+              <i class="fas fa-angle-right"></i>
+            </span>
+          </a>
+        </div>
+      <?php endif;?>
+    <?php else:?>
+      <?php echo $this->pagination(); ?>
+    <?php endif;?>
+  </div>
+</section>
+<script>
+  $('.grid').colcade({
+    columns: '.grid-col',
+    items: '.grid-item'
+  });
+  var module = document.getElementsByClassName("truncate");
+  $clamp(module, {clamp: 3});
+</script>

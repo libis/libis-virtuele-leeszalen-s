@@ -1,0 +1,5 @@
+/config/database.ini
+/files
+/logs
+/modules/Log
+node_modules

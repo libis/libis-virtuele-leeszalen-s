@@ -1,0 +1,39 @@
+<?php
+/**
+ * @var \Zend\View\Renderer\PhpRenderer $this
+ * @var \Search\Query $query
+ * @var \Search\Response $response
+ * @var array $sortOptions
+ */
+
+$translate = $this->plugin('translate');
+?>
+
+<div class="search-results-header">
+    <div class="search-results-count">
+        <?= $this->pagination() ?>
+    </div>
+    <div class="search-results-sort">
+        <form>
+            <?php
+            if ($sortOptions):
+                $sortOptions = array_map([$this, 'translate'], $sortOptions);
+                $sortSelect = new Zend\Form\Element\Select('sort');
+                $sortSelect
+                    ->setValueOptions($sortOptions)
+                    ->setValue($query->getSort())
+                    ->setLabel($translate('Sort by'));
+            endif;
+            ?>
+            <?php if (!empty($sortSelect)): ?>
+            <?= $this->formLabel($sortSelect) ?>
+            <?= $this->formSelect($sortSelect) ?>
+            <?php endif; ?>
+        </form>
+    </div>
+    <div>
+        <a class="search-view-type search-view-type-list" href="#"><?= $translate('list') ?></a>
+        |
+        <a class="search-view-type search-view-type-grid" href="#"><?= $translate('grid') ?></a>
+    </div>
+</div>

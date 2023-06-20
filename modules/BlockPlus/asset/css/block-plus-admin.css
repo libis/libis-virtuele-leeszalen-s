@@ -1,0 +1,72 @@
+@media screen {
+
+    /* Allows to display chosen-select in the bottom of a block. */
+    .block.value .collapse + .collapsible {
+        display: block;
+        clear: both;
+        overflow: inherit;
+    }
+
+    /* Footnotes (against core styles) */
+    section.footnotes header {
+        background-color: inherit;
+        width: auto;
+        min-height: initial;
+        text-align: initial;
+        padding: initial;
+        color: initial;
+    }
+    section.footnotes header h2 {
+        font-size: 16px;
+    }
+
+    .cke_button_icon.cke_button__footnotes_icon {
+        background-image: url("../vendor/ckeditor-footnotes/icons/footnotes.png");
+        background-size: auto;
+    }
+
+    .block textarea.full.wysiwyg {
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+    }
+    .block textarea.full.wysiwyg,
+    .block textarea.full.wysiwyg + [contenteditable=true] {
+        height: 288px;
+        max-height: initial;
+    }
+
+    .block[data-block-layout="browsePreview"] textarea.full.wysiwyg,
+    .block[data-block-layout="browsePreview"] textarea.full.wysiwyg + [contenteditable=true] {
+        height: inherit;
+        max-height: inherit;
+    }
+
+    .asset-form-element .selected-asset-page-metadata {
+        display: flex;
+        align-items: center;
+        max-width: 100%;
+        min-width: 0;
+        margin-top: 12px;
+    }
+    .asset-form-element .selected-asset-page-metadata img {
+        max-height: 48px;
+        max-width: 48px;
+        margin-right: 12px;
+    }
+}
+
+@media screen and (max-width:640px) {
+    section header {
+        width: initial;
+        float: none;
+        text-align: initial;
+        position: initial;
+        top: 0;
+        left: 0;
+        padding: 0;
+        right: 0;
+        z-index: initial;
+        min-height: 0;
+    }
+}

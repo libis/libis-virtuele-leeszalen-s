@@ -1,0 +1,4 @@
+<?= implode('</span>
+  <span itemscope="" itemtype="https://data-vocabulary.org/Breadcrumb" class="breadcrumb__scope">', array_map(function ($a) {
+  return '<a class="breadcrumb__item" href="'.$a->getHref().'">'.$a->getLabel().'</a>';
+}, $this->pages)); ?>

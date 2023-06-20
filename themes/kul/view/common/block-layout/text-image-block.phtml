@@ -1,0 +1,72 @@
+<section class="section">
+    <div class="container">
+      <div class="row">
+          <?php if(!$block->dataValue('reverse')):?>
+            <div class="col-md-6">
+              <div class="card card-gray">
+                <div class="card-body">
+                  <?php if($block->dataValue('title')):?>
+                    <h2 class="card-title"><?php echo $block->dataValue('title');?></h2>
+                  <?php endif;?>  
+                  <?php echo $block->dataValue('text');?>
+                </div>
+                <?php if($block->dataValue('link')):?>
+                  <a class="more" href="<?php echo $block->dataValue('link');?>"><?php echo $block->dataValue('label');?></a>
+                <?php endif;?>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <?php if($attachments):
+                $media = $attachments[0]->media();
+                if($media):
+                  $url = $media->thumbnailUrl('large');
+                  $url = str_replace('http:', '', $url);
+                  if($block->dataValue('itemurl')):
+                    $itemUrl = $media->item()->url();
+                    $itemUrl = str_replace('http:', '', $itemUrl);
+                    ?>
+                    <a href="<?php echo $itemUrl;?>"><img src="<?php echo $url;?>"></a>
+                  <?php else:?>
+                    <img src="<?php echo $url;?>">
+                  <?php endif;?>
+                <?php endif;?>
+              <div class="caption"><?php echo $attachments[0]->caption();?></div>
+              <?php endif;?>
+            </div>
+          <?php else:?>
+            <div class="col-md-6">
+              <?php if($attachments):
+                $media = $attachments[0]->media();
+                if($media):
+                  $url = $media->thumbnailUrl('large');
+                  $url = str_replace('http:', '', $url);
+                  if($block->dataValue('itemurl')):
+                    $itemUrl = $media->item()->url();
+                    $itemUrl = str_replace('http:', '', $itemUrl);
+                    ?>
+                    <a href="<?php echo $itemUrl;?>"><img src="<?php echo $url;?>"></a>
+                  <?php else:?>
+                    <img src="<?php echo $url;?>">
+                  <?php endif;?>
+                <?php endif;?>
+              <figcaption><?php echo $attachments[0]->caption();?></figcaption>
+              <?php endif;?>
+            </div>
+            <div class="col-md-6">
+            <div class="card card-gray">
+              <div class="card-body">
+                <?php if($block->dataValue('title')):?>
+                  <h2><?php echo $block->dataValue('title');?></h2>
+                <?php endif;?>
+                <?php echo $block->dataValue('text');?>
+             
+                <?php if($block->dataValue('link')):?>
+                    <a class="more" href="<?php echo $block->dataValue('link');?>"><?php echo $block->dataValue('label');?></a>
+                <?php endif;?>
+            </div>
+          <?php endif;?>
+          </div>
+        </div>
+      </div>
+  </div>
+</section>

@@ -1,0 +1,322 @@
+//search
+#search-filters {
+margin: 1rem 0 !important;
+}
+  
+#search-filters .filter{
+margin-left: 0 !important;
+}
+  
+.facets{
+    padding: 1rem;
+    background: rgba($primary,0.2);
+
+    ul{
+        font-size: 0.8rem;
+        padding-left: 0;
+    }
+
+    .filter select{
+        margin-bottom: 0.3rem;
+        max-width: 180px;
+    }
+
+    .search-facet > h3{
+        margin-bottom: 0.2rem;
+        padding-bottom:0.2rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .search-facet-items{
+        margin-bottom: 0.5rem;
+    }
+
+    .more-link, .less-link{
+        border-top: 1px solid #ccc;
+        padding-top:0.5rem;
+        margin-top: 0.5rem;
+        i{
+        margin-right: 0.3rem;
+        line-height: 1.6;
+        }
+    }
+
+    a{
+        display: flex;
+
+        &::before{
+        width: auto !important;
+        margin-right: 0.3rem;
+        }
+    }
+}
+
+.placeholder-thumbnail{
+    width:100%;
+    background: #ccc;
+    padding-top: 100%;
+}
+
+.resource-metadata{
+    margin-top:.75rem;
+    padding:1rem 1rem 1rem 1rem;
+    border-top: 1px solid $primary;
+
+}
+
+.resource-metadata-grid{
+    padding:0.5rem 0;
+    min-height:4rem;
+
+    h5{
+        font-size:0.8rem !important;
+        text-transform: none !important;
+        margin:0 !important;
+    }
+
+    h4{
+        font-size: 0.9rem !important;
+        margin-bottom: 0.3rem;;
+    }
+
+    .description{
+        display: none;
+    }
+}
+  
+.list{
+    background-color: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    display:block !important;
+  
+    .grid-col{
+      width:100%;
+      display: block;
+  
+      .grid-item{
+        display:flex;
+        align-items: center;
+        .resource-thumbnail{
+          padding-right:1rem;
+          max-width: 100px;
+          position: relative;
+  
+          .placeholder-thumbnail{
+            min-width:84px;
+            background: #aaa;
+            height: 84px;
+          }
+  
+          .tags{
+            display:block;
+            position: absolute;
+            top: 1rem;
+            left: 85%;
+      
+            span{
+              display: block;
+              margin-bottom: 0.3rem;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  .grid{
+    .resource-thumbnail{
+        img{
+          width:100%;
+        }
+  
+        a{
+          line-height: 0;
+        }
+    }
+  
+    .description{
+      display: none;
+    }
+  }
+  
+  .resource-thumbnail{
+     position: relative;     
+  
+    .tags{
+      position: absolute;
+      top: 1rem;
+      left: 0%;
+      z-index: 1;
+  
+      span{
+        margin-bottom: 0.3rem;
+      }
+    }
+  }
+  
+  .metadata-box{
+    background:white;
+    padding:1rem;
+  
+    h4{
+      line-height: 1.5;
+    }
+  }
+
+  #advanced-search-form{
+
+    label{
+      font-weight: 600;
+    }
+  
+    .field-meta{
+      margin-bottom: 0.5rem;;
+      font-weight: 600;
+      display: block;    
+    }
+  
+    legend{
+      display: none;
+    }
+  
+    #q{
+      width: 100%;
+    }
+  
+    input[type=text], select{
+      padding:0.4rem;
+      border: none;
+    }
+  }
+
+  input[type=submit]{
+    background: $primary;
+    color: white;
+    border: none;
+    padding:0.4rem;
+    margin-top: 1rem;
+  }
+  
+  #search-filters .filter {
+    padding-left:0 !important;
+  }
+  
+  .facets .filter select {
+    margin-bottom: 0 !important;
+  }
+  .form-search button.search-submit {
+    float: none !important;
+  }
+  
+  #psl-search-form-date {
+    -webkit-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+  }
+  
+  .currentDate {
+    font-size: 0.9rem;
+    background: #f5f5f5;
+    margin-left: 0.5rem;
+    padding: 0.1rem 0.3rem;
+    color: #666;
+  }
+  
+  
+  .form-search button.search-submit{
+    background-color: $primary;
+    border-color: transparent;
+    color: #fff;
+    font-weight: bold;
+    border-width: 1px;
+    font-size:.75em;
+    border-radius:2px;
+    cursor: pointer;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    padding-bottom: calc(0.5em - 1px);
+    padding-left: 1em;
+    padding-right: 1em;
+    padding-top: calc(0.5em - 1px);
+    text-align: center;
+    white-space: nowrap;
+    line-height: 1.5;
+  }
+  
+  #psl-search-form{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    margin: 1.5rem 0;
+  }
+  
+  #psl-search-form-date{
+    flex: 1;
+  }
+  
+  #psl-search-form-date > label {
+    font-weight: bold;
+  }
+  
+  #psl-search-form-date #psl-search-form-date-slider {
+    margin-top: 1em;
+    height: 5px;
+  }
+  
+  #psl-search-form-date #psl-search-form-date-slider .ui-slider-handle {
+    background: #666;
+    width: 5px;
+    margin-left: -5px;
+    top: -8px;
+    border-radius: 0;
+    border: 0 none;
+  }
+  
+  #psl-search-form-date #psl-search-form-date-slider .ui-slider-range {
+    background: $primary;
+  }
+  
+  .ui-widget.ui-widget-content {
+    border: none;
+  }
+  
+  #psl-search-form-date-graduations {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 0.8em;
+    font-size: 0.9rem;
+  }
+  
+  #psl-search-form-date-graduations > div {
+    border-right: 1px solid #ccc;
+    border-left: 1px solid #ccc;
+    flex-grow: 1;
+    flex-basis: 12.5%;
+    text-align: center;
+  }
+  
+  #psl-search-form-date-graduations > div:last-child {
+    border-right: 0 none;
+  }
+  
+  #psl-search-form-date-graduations > div:first-child {
+    border-left: 0 none;
+  }
+  
+  
+  .psl-tab-submit{
+    input[type=submit]{
+      background: $primary;
+      color: white;
+      border: none;
+      padding:0.4rem;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      margin-left: 0.5rem;
+    }
+  }

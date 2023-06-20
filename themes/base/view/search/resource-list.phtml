@@ -1,0 +1,83 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\SiteRepresentation $site
+ * @var \AdvancedSearch\Response $response
+ * @var string $resourceName
+ * @var string $title
+ */
+
+$resources = $response->getResources($resourceName);
+
+// A check is done: when page is not first, the resources may be empty even with results.
+if (!$resources) return;
+
+$plugins = $this->getHelperPluginManager();
+$translate = $plugins->get('translate');
+$hyperlink = $plugins->get('hyperlink');
+$assetUrl = $plugins->get('assetUrl');
+$escape = $plugins->get('escapeHtml');
+$thumbnailHelper = $plugins->get('thumbnail');
+
+$setting = $plugins->get($site ? 'siteSetting' : 'setting');
+
+$filterLocale = (bool) $setting('filter_locale_values');
+$lang = $this->lang();
+
+$headingTerm = $setting('browse_heading_property_term');
+$bodyTerm = $setting('browse_body_property_term');
+if ($headingTerm) {
+    $headingOptions = [
+        'default' => $translate('[Untitled]'),
+        'lang' => ($filterLocale ? [$lang, ''] : null)
+    ];
+} else {
+    $headingOptions = $filterLocale ? [$lang, ''] : null;
+}
+if ($bodyTerm) {
+    $bodyOptions = ['lang' => ($filterLocale ? [$lang, ''] : null)];
+} else {
+    $bodyOptions = $filterLocale ? [$lang, ''] : null;
+}
+
+$defaultThumbnail = '<img src="' . $assetUrl('thumbnails/default.png', 'Omeka') . '" title="' . $translate('No media') . '"/>';
+?>
+
+<?php if ($title): ?>
+<div class="content"><h3 class="title"><?= $escape($title) ?></h3></div>
+<?php endif; ?>
+<div class="columns is-multiline">
+    <?php /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource */
+    foreach ($resources as $resource):
+        $resourceType = $resource->resourceName();
+        $media = $resource->primaryMedia();
+        $thumbnail = $media ? $thumbnailHelper($media, 'square') : $defaultThumbnail;
+        $heading = $headingTerm ? $resource->value($headingTerm, $headingOptions) : $resource->displayTitle(null, $headingOptions);
+        $body = $bodyTerm ? $resource->value($bodyTerm, $bodyOptions) : $resource->displayDescription(null, $bodyOptions);
+        $template = $resource->resourceTemplate();
+        if($template):
+            $type = $template->label();
+        else:
+            $type = "";
+        endif;
+    ?>
+
+    <div class="column is-3  resource-thumbnail resource <?= $resourceType ?>">
+        <div class="">
+            <?= $hyperlink->raw($thumbnail, $resource->url(), ['class' => 'resource-link']) ?>
+        </div>   
+        <div class="content resource-metadata-grid">
+            <h4 style="margin:0.3rem 0;" class="title is-5"><?= $resource->link($heading) ?></h4>        
+        </div>
+    </div> 
+    <div class="content column is-8 resource-metadata">
+        <h6 class="subtitle is-6"><?php echo $type;?></h6>
+        <h4 class="title"><?= $resource->link($heading) ?></h4>
+        
+        <div class="description">
+            <?= $resource->displayDescription();?>
+        </div>        
+    </div>
+
+    <?php endforeach; ?>
+</div>

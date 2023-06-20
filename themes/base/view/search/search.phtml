@@ -1,0 +1,212 @@
+<?php
+/*
+ * Copyright BibLibre, 2016
+ * Copyright Daniel Berthereau, 2017-2021
+ *
+ * This software is governed by the CeCILL license under French law and abiding
+ * by the rules of distribution of free software.  You can use, modify and/ or
+ * redistribute the software under the terms of the CeCILL license as circulated
+ * by CEA, CNRS and INRIA at the following URL "http://www.cecill.info".
+ *
+ * As a counterpart to the access to the source code and rights to copy, modify
+ * and redistribute granted by the license, users are provided only with a
+ * limited warranty and the software's author, the holder of the economic
+ * rights, and the successive licensors have only limited liability.
+ *
+ * In this respect, the user's attention is drawn to the risks associated with
+ * loading, using, modifying and/or developing or reproducing the software by
+ * the user in light of its specific status of free software, that may mean that
+ * it is complicated to manipulate, and that also therefore means that it is
+ * reserved for developers and experienced professionals having in-depth
+ * computer knowledge. Users are therefore encouraged to load and test the
+ * software's suitability as regards their requirements in conditions enabling
+ * the security of their systems and/or data to be ensured and, more generally,
+ * to use and operate it in the same conditions as regards security.
+ *
+ * The fact that you are presently reading this means that you have had
+ * knowledge of the CeCILL license and that you accept its terms.
+ */
+
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\SiteRepresentation $site
+ * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchPage
+ * @var \AdvancedSearch\Query $query
+ * @var \AdvancedSearch\Response $response
+ * For block layout:
+ * @var string $heading Unused in current template.
+ * @var bool $skipFormAction Remove action of the form, so it uses current page.
+ */
+
+// Compatibility with old theme for module Search.
+if ($this->resolver('search/index/search.phtml')) {
+    $this->logger()->warn('The file "search/index/search.phtml" of your current theme should be moved to "search/search.phtml".');
+    echo $this->partial('search/index/search.phtml', $this->vars());
+    return;
+}
+
+$plugins = $this->getHelperPluginManager();
+$translate = $plugins->get('translate');
+$translatePlural = $plugins->get('translatePlural');
+$assetUrl = $plugins->get('assetUrl');
+$partial = $plugins->get('partial');
+$api = $plugins->get('api');
+$vars = $this->vars();
+
+// Used in case of a redirect of item-set/show to search, when used like item/browse.
+$itemSetId = $this->params()->fromRoute('item-set-id');
+// TODO Use site item set ?
+$itemSet = $itemSetId ? $api->searchOne('item_sets', ['id' => $itemSetId])->getContent() : null;
+
+$isPartial = !$site;
+$skipFormAction = !empty($skipFormAction);
+
+$this->headScript()->appendFile($this->assetUrl('jquery-ui.min.js', 'jQueryUI'));
+$this->headLink()->appendStylesheet($this->assetUrl('jquery-ui.min.css', 'jQueryUI'));
+$this->headLink()->appendStylesheet($assetUrl('css/search.css', 'AdvancedSearch'));
+$this->headScript()->appendFile($assetUrl('js/search.js', 'AdvancedSearch'), 'text/javascript', ['defer' => 'defer']);
+?>
+
+<!--<section class="section breadcrumb-section">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+      <ul>
+        <li><a href="<?php echo $site->url(); ?>">Home</a></li>
+        <li><?php echo $translate("Zoeken"); ?></li>
+      </ul>
+    </nav>
+  </div>
+</section>-->
+<section class="page section" id="search-page" style="background:#fff;">
+    <div class="container">
+        <?php if (isset($response)):
+        $documentCount = $response->getTotalResults();
+        ?>
+<div class="search-results-wrapper columns">
+    <div class="column is-4">
+        <div class="facets">
+            <div class="content">
+            <?= $this->searchForm($searchPage, null, $skipFormAction) ?>
+            </div>  
+           
+            <?= $partial('search/facets', [
+                'searchPage' => $searchPage,
+                'query' => $query,
+                'response' => $response,
+                'itemSet' => $itemSet,
+            ]) ?>
+        </div>
+    </div>
+    <div class="search-results column is-8">
+        <?php if ($documentCount):
+            $itemSetsCount = $response->getResourceTotalResults('item_sets');
+            $itemsCount = $response->getResourceTotalResults('items');
+            $pagination = (string) $this->pagination('common/pagination');
+            ?>
+
+            <?= $partial('search/results-header', [
+                'searchPage' => $searchPage,
+                'query' => $query,
+                'response' => $response,
+                'itemSet' => $itemSet,
+                'documentCount' => $documentCount,
+                'pagination' => $pagination,
+            ]) ?>
+
+            <?php if ($itemSetsCount): ?>
+            <?= $partial('search/resource-list', [
+                'site' => $site,
+                'title' => sprintf($translatePlural('%s item set', '%s item sets', $itemSetsCount), $itemSetsCount),
+                'response' => $response,
+                'resourceName' => 'item_sets',
+            ]) ?>
+            <?php endif; ?>
+
+            <?php if ($itemsCount): ?>
+            <?php 
+                $facets_temp = $query->getActiveFacets(); 
+                $template_multi = array(
+                    "Erfgoed" => "Erfgoed",
+                    "Historische organisatie" => "Historische organisaties",
+                    "Nieuwsbericht" => "Nieuwsberichten"
+                );
+                if(isset($facets_temp["resource_template_id"])):
+                    $title = $itemsCount." ";
+                    foreach($facets_temp["resource_template_id"] as $template_label):
+                        $title .= $template_multi[$template_label];
+                        if ($template_label != end($facets_temp["resource_template_id"])) {
+                            $title .= " & ";
+                        }
+                    endforeach;    
+                else:
+                    $title = $itemsCount."resultaten";    
+                endif;     
+            ?>    
+            <?= $partial('search/resource-list', [
+                'site' => $site,
+                'title' => $title,
+                'response' => $response,
+                'resourceName' => 'items',
+            ]) ?>
+            <?php endif; ?>
+
+            <?= $partial('search/results-footer', [
+                'searchPage' => $searchPage,
+                'query' => $query,
+                'response' => $response,
+                'pagination' => $pagination,
+            ]) ?>
+        <?php else: ?>
+            <div class="noresults">
+                <?php if (empty($query) && !$itemSet): ?>
+                <?= $translate('Fill a query and get results.') ?>
+                <?php elseif (empty($query) && $itemSet): ?>
+                <?= $translate('This item set has no items.') ?>
+                <?php else: ?>
+                <?= $translate('Your query returned no results') ?>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </div>   
+</div>
+
+<?php else: ?>
+
+<div class="search-results-wrapper">
+    <div class="search-results">
+        <div class="noresults"><?= $translate('An error occured and your query returned no results.') ?></div>
+    </div>
+</div>
+
+<?php endif; ?>
+
+<?php if (empty($isPartial)): ?>
+    </div>
+</section>
+<?php endif; ?>
+<script>
+  $(document).ready(function() {
+    $('.search-view-type-list').on('click', function(e) {
+        e.preventDefault();
+        $('.resource-metadata').show();
+        $('.resource-metadata-grid').hide();
+        $(this).addClass('active');
+    });
+
+    $('.search-view-type-grid').on('click', function(e) {
+        e.preventDefault();        
+        $('.resource-metadata').hide();
+        $('.resource-metadata-grid').show();
+        $(this).addClass('active');
+    });
+
+    $('#search-form').on('submit',function(e){
+      e.preventDefault();
+      const params = new URLSearchParams(window.location.search)
+      
+      params.set('q',$('[name="q"]').val());     
+      window.location.href = location.protocol + '//' + location.host + location.pathname+'?'+params.toString();
+  
+    });    
+  });  
+</script>

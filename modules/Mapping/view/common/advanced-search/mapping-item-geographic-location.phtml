@@ -1,0 +1,25 @@
+<?php
+use Laminas\Form;
+
+$elementAddress = (new Form\Element\Text('mapping_address'))
+    ->setLabel($this->translate('Geographic Address'))
+    ->setValue($query['mapping_address'] ?? '');
+$elementRadius = (new Form\Element\Text('mapping_radius'))
+    ->setLabel($this->translate('Geographic Radius'))
+    ->setValue($query['mapping_radius'] ?? '');
+$elementRadiusUnit = (new Form\Element\Select('mapping_radius_unit'))
+    ->setLabel($this->translate('Geographic Radius Unit'))
+    ->setValueOptions([
+        'km' => $this->translate('Kilometers'),
+        'miles' => $this->translate('Miles'),
+    ])
+    ->setValue($query['mapping_radius_unit'] ?? '');
+
+$fieldset = (new Form\Fieldset('mapping'))
+    ->setLabel($this->translate('Geographic location'));
+$fieldset->add($elementAddress);
+$fieldset->add($elementRadius);
+$fieldset->add($elementRadiusUnit);
+
+echo $this->formCollection($fieldset);
+?>

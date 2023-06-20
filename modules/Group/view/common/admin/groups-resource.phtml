@@ -1,0 +1,50 @@
+<?php
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+$resourceName = $resource && $resource->getControllerName();
+$updateRight = false; // $this->userIsAllowed(GroupUser::class, 'update');
+$browseUserRight = $this->userIsAllowed('Omeka\Controller\Admin\User', 'browse');
+?>
+<style>
+.group .actions {
+    float: right;
+}
+</style>
+<div class="meta-group group">
+    <h4><?= $translate('Groups') ?></h4>
+<?php if (empty($groups)): ?>
+    <div class="value no-value">
+        <?= $escape($translate('No group.')) ?>
+    </div>
+<?php else: ?>
+    <?php foreach ($groups as $group): ?>
+    <div class="value group"><?= $this->hyperlink($group->name(), $group->adminUrl()) ?>
+    <?php if ($updateRight): ?>
+    <span class="single actions"><a href="#"
+        class="o-icon-delete"
+        data-delete-confirm-url="<?= $escape($group->url('delete-confirm')) ?>"
+        aria-label="<?= $escape($translate('Unassign group')) ?>"
+        title="<?= $escape($translate('Unassign group')) ?>"></a></span>
+    <?php endif; ?>
+    <span class="single actions"><a href="<?= $escape($group->urlEntities('media')) ?>"
+        class="o-icon-media"
+        aria-label="<?= $escape($translate('Media within this group')) ?>"
+        title="<?= $escape($translate('Media within this group')) ?>"></a></span>
+    <span class="single actions"><a href="<?= $escape($group->urlEntities('item')) ?>"
+        class="o-icon-items"
+        aria-label="<?= $escape($translate('Items within this group')) ?>"
+        title="<?= $escape($translate('Items within this group')) ?>"></a></span>
+    <span class="single actions"><a href="<?= $escape($group->urlEntities('item-set')) ?>"
+        class="o-icon-item-sets"
+        aria-label="<?= $escape($translate('Item sets within this group')) ?>"
+        title="<?= $escape($translate('Item sets within this group')) ?>"></a></span>
+    <?php if ($browseUserRight): ?>
+    <span class="single actions"><a href="<?= $escape($group->urlEntities('user')) ?>"
+        class="o-icon-user"
+        aria-label="<?= $escape($translate('Users within this group')) ?>"
+        title="<?= $escape($translate('Users within this group')) ?>"></a></span>
+    </div>
+    <?php endif; ?>
+    <?php endforeach; ?>
+<?php endif; ?>
+</div>

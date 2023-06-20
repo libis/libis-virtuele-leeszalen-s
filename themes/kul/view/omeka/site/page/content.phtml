@@ -1,0 +1,28 @@
+<?php
+$layouts = [];
+foreach ($page->blocks() as $block) {
+    if (!array_key_exists($block->layout(), $layouts)) {
+        // Prepare render only once per layout type.
+        $layouts[$block->layout()] = null;
+        $this->blockLayout()->prepareRender($block->layout());
+    }
+    
+    if($block->layout() == 'pageTitle' || $block->layout() == 'html'):
+      echo '<section><div class="container first">';
+    endif;
+
+    echo $this->blockLayout()->render($block);
+    
+    if($block->layout() == 'pageTitle' || $block->layout() == 'html'):
+      $credits = $this->pageMetadata('credits') ?: null;
+      if ($credits):
+          $lang = $this->lang();
+          if($lang == "nl-NL"):
+            echo "<h3 style='subtitle is-4'>Door ".$credits."</h3>";
+          else:
+            echo "<h3 style='subtitle is-4'>By ".$credits."</h3>";
+          endif;  
+      endif;
+      echo '</div></section>';      
+    endif;
+}

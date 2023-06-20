@@ -1,0 +1,417 @@
+# Copyright (C) YEAR THE PACKAGE’S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Daniel Berthereau <Daniel.github@Berthereau.net>, 2020.
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-01-25 00:00+0000\n"
+"PO-Revision-Date: 2021-01-25 00:00+0000\n"
+"Last-Translator: Daniel Berthereau <Daniel.fr@Berthereau.net>\n"
+"Language-Team: French <kde-i18n-doc@kde.org>\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 2.4.2\n"
+
+#: Module.php:62
+msgid "The composer vendor is not ready."
+msgstr "Le dossier /vendor de composer n’est pas prêt."
+
+#: Module.php:63
+msgid "See module’s installation documentation."
+msgstr "Consulter la documentation d’installation du module."
+
+#: Module.php:870
+msgid "Remove and copy data"
+msgstr "Supprimer et copier des données"
+
+#: src/Api/Adapter/SitePageRelationAdapter.php:248
+#, php-format
+msgid "The \"%s\" field is not available in the %s entity class."
+msgstr "Le champ \"%s\" n'est pas disponible avec la classe %s."
+
+#: src/Generic/AbstractModule.php:66
+#, php-format
+msgid "This module requires the module \"%s\"."
+msgstr "Ce module requiert le module \"%s\"."
+
+#: src/Generic/AbstractModule.php:73
+#, php-format
+msgid "This module requires modules \"%s\"."
+msgstr "Ce module requiert les modules \"%s\"."
+
+#: src/Generic/AbstractModule.php:80
+msgid "This module has resources that connot be installed."
+msgstr "Ce module a des ressources qui ne peuvent pas être installées."
+
+#: src/Generic/AbstractModule.php:707
+#, php-format
+msgid ""
+"The module \"%s\" was automatically deactivated because the dependencies are "
+"unavailable."
+msgstr ""
+"Le module \"%s\" a été automatiquement désactivé car ses dépendances ne sont "
+"plus disponibles."
+
+#: src/Site/BlockLayout/MirrorPage.php:97
+msgid "Choose any page from any site."
+msgstr "Choisir une page de n’importe quel site."
+
+#: src/Site/BlockLayout/MirrorPage.php:98
+msgid ""
+"If a page of a private site is selected, it will be hidden on the public "
+"side."
+msgstr ""
+"Si une page d’un site privé est choisie, elle sera cachée dans la partie "
+"publique."
+
+#: src/Site/BlockLayout/MirrorPage.php:99
+msgid "The current page and recursive pages are forbidden."
+msgstr ""
+"La page en cours ou qui se trouve récursivement dans une autre page ne peut "
+"être choisie."
+
+#: Module.php:800 src/Form/SettingsFieldset.php:22
+#: src/Form/SettingsFieldset.php:24
+msgid "Remove all groups"
+msgstr "Supprimer tous les groupes"
+
+#: Module.php:933 src/Job/DuplicateSite.php:89
+#, php-format
+msgid "The site #%1$s cannot be copied. Check your rights."
+msgstr "Le site #%1$s ne peut pas être copié. Vérifiez vos droits."
+
+#: Module.php:964
+#, php-format
+msgid "Remove/copy processes have been done for site \"%1$s\"."
+msgstr ""
+"Les traitements de suppression/copie ont été réalisés pour le site \"%1$s\"."
+
+#: Module.php:971
+#, php-format
+msgid "See %1$sjob #%2$d%3$s for more information (%4$slogs%3$s)."
+msgstr ""
+"Consulter la %1$stâche #%2$d%3$s pour davantage d’informations (%4$sjournaux"
+"%3$s)."
+
+#: src/Form/DuplicateSiteFieldset.php:12
+msgid "Duplicate site"
+msgstr "Dupliquer le site"
+
+#: src/Form/DuplicateSiteFieldset.php:20
+msgid "Site navigation"
+msgstr "Navigation du site"
+
+#: src/Form/DuplicateSiteFieldset.php:21
+msgid "Site settings"
+msgstr "Paramètres du site"
+
+#: src/Form/DuplicateSiteFieldset.php:23
+msgid "Item pool"
+msgstr "Réservoir de contenus"
+
+#: src/Form/DuplicateSiteFieldset.php:25
+msgid "Permissions"
+msgstr "Permissions"
+
+#: src/Form/DuplicateSiteFieldset.php:28
+msgid "Collecting forms"
+msgstr "Formulaires de collecte"
+
+#: src/Form/DuplicateSiteFieldset.php:46
+msgid "Data to remove"
+msgstr "Données à supprimer"
+
+#: src/Form/DuplicateSiteFieldset.php:59
+msgid "Site to copy"
+msgstr "Site à copier"
+
+#: src/Form/DuplicateSiteFieldset.php:74
+msgid "Data to copy"
+msgstr "Données à copier"
+
+#: src/Form/DuplicateSiteFieldset.php:87
+msgid "Duplication mode for pages"
+msgstr "Mode de duplication pour les pages"
+
+#: src/Form/DuplicateSiteFieldset.php:89
+msgid "Copy each page and block individually"
+msgstr "Copier chaque page et chaque bloc individuellement"
+
+#: src/Form/DuplicateSiteFieldset.php:90
+msgid "Create linked mirror pages"
+msgstr "Créer des pages miroirs"
+
+#: src/Form/DuplicateSiteFieldset.php:105
+msgid "Locale/language code"
+msgstr "Code de langue / localisation"
+
+#: src/Form/DuplicateSiteFieldset.php:106
+msgid "Leave blank to use the global locale setting."
+msgstr "Laisser blanc pour utiliser le paramètre de langue global."
+
+#: src/Form/SitePageForm.php:17
+msgid "Translations"
+msgstr "Traductions"
+
+#: src/Form/SitePageForm.php:18
+msgid ""
+"The selected pages will be translations of the current page within a site "
+"group, that must be defined. The language switcher displays only one related "
+"page by site."
+msgstr ""
+"Les pages choisies seront des traductions de la page courante à l’intérieur "
+"du groupe de sites, qui doit être défini. Le sélecteur de langue affiche "
+"seulement une page liée par site."
+
+#: src/Form/SitePageForm.php:27
+msgid "Select translations of this page…"
+msgstr "Choisir les traductions de cette page…"
+
+#: src/Form/Element/AbstractGroupBySiteSelect.php:168
+msgid "[No site]"
+msgstr "[Aucun site]"
+
+#: src/Form/SettingsFieldset.php:9 src/Form/SiteSettingsFieldset.php:16
+msgid "Internationalisation"
+msgstr "Internationalisation"
+
+#: src/Form/SettingsFieldset.php:20
+msgid "Site groups"
+msgstr "Groupes de sites"
+
+#: src/Form/SettingsFieldset.php:21
+msgid ""
+"Group some sites with a different language so they can be managed together "
+"as a whole. Set all site slugs by group, one by line, with or without comma "
+"separator."
+msgstr ""
+"Permet de grouper plusieurs sites avec une langue différente de façon à les "
+"gérer ensemble. Indiquer tous les chemins des sites, un par ligne avec un "
+"espace ou une virgule pour les séparer."
+
+#: src/Form/SiteSettingsFieldset.php:24 src/Form/SiteSettingsFieldset.php:36
+msgid "All values"
+msgstr "Toutes les valeurs"
+
+#: src/Form/SiteSettingsFieldset.php:25
+msgid "All values, with language of the site first"
+msgstr "Toutes les valeurs, avec la langue du site en premier"
+
+#: src/Form/SiteSettingsFieldset.php:26
+msgid "All values, with language of the site or iso fallback first"
+msgstr ""
+"Toutes les valeurs, avec la langue du site ou les langues de repli ISO en "
+"premier"
+
+#: src/Form/SiteSettingsFieldset.php:27
+msgid "All values, with language of the site or custom fallback first"
+msgstr ""
+"Toutes les valeurs, avec la langue du site ou une langue de repli "
+"personnalisée en premier"
+
+#: src/Form/SiteSettingsFieldset.php:28
+msgid "Only values with the language of the site"
+msgstr "Seulement les valeurs correspondant à la langue du site"
+
+#: src/Form/SiteSettingsFieldset.php:29
+msgid "Only values with the language of the site, with iso fallback"
+msgstr ""
+"Seulement les valeurs correspondant à la langue du site, ou à défaut celles "
+"ayant les codes iso correspondant"
+
+#: src/Form/SiteSettingsFieldset.php:30
+msgid "Only values with the language of the site, with custom fallback"
+msgstr ""
+"Seulement les valeurs correspondant à la langue du site, ou à défaut celles "
+"ayant les langues ci-dessous"
+
+#: src/Form/SiteSettingsFieldset.php:33
+msgid ""
+"Display only the values in the specified language. It applies only for "
+"properties that contains at least one value with a language. The option can "
+"be overridden in the theme."
+msgstr ""
+"Afficher seulement les valeurs dans la langue choisie. Cela s’applique "
+"seulement aux propriétés qui contiennent au moins une valeur avec une "
+"langue. Cette option peut être contournée par le thème."
+
+#: src/Form/SiteSettingsFieldset.php:38
+msgid ""
+"Display only the values in the specified language. This option is available "
+"only when the site has a language."
+msgstr ""
+"Afficher seulement les valeurs dans la langue choisie. Cette option est "
+"disponible seulement si le site a une langue."
+
+#: src/Form/SiteSettingsFieldset.php:46
+msgid "Language of values"
+msgstr "Langue des valeurs"
+
+#: src/Form/SiteSettingsFieldset.php:60
+msgid "Custom language fallbacks"
+msgstr "Langues de repli"
+
+#: src/Form/SiteSettingsFieldset.php:61
+msgid ""
+"Specify values to display when a property has no value with the language of "
+"the site. Set one language code by line."
+msgstr ""
+"Indique les valeurs à afficher quand une propriété n’a pas de valeur dans la "
+"langue du site. Indiquer une langue par ligne."
+
+#: src/Form/SiteSettingsFieldset.php:76
+msgid "Required languages"
+msgstr "Langues obligatoires"
+
+#: src/Form/SiteSettingsFieldset.php:77
+msgid ""
+"Specify values to display in all cases. Values without language are "
+"displayed in all cases. Set one language code by line."
+msgstr ""
+"Indique les valeurs à afficher dans tous les cas. Les valeurs sans langue "
+"sont affichées dans tous les cas. Indiquer un code de langue par ligne."
+
+#: src/Form/MirrorPageFieldset.php:16
+msgid ""
+"Private sites are marked with a \"*\". If a private page is selected, it "
+"will be hidden on the public site. The current page and recursive pages are "
+"forbidden."
+msgstr ""
+"Les sites privés sont indiqués avec une \"*\". Si une page privée est "
+"choisie, elle sera cachée au public. La page courante et les pages qui la "
+"contiennent récursivement sont interdites."
+
+#: src/Api/Adapter/SitePageRelationAdapter.php:67
+msgid "A relation between pages must have a page."
+msgstr "Une relation entre des pages doit avoir une page."
+
+#: src/Api/Adapter/SitePageRelationAdapter.php:70
+msgid "A relation between pages must have a related page."
+msgstr "Une relation entre pages doit avoir une page liée."
+
+#: src/Api/Adapter/SitePageRelationAdapter.php:72
+msgid ""
+"The page and the related page of a relation between pages must be different."
+msgstr ""
+"La page et la page liée d’une relation entre pages doivent être différentes."
+
+#: src/Job/DuplicateSite.php:74
+#, php-format
+msgid "The site #%1$s is not available for copy. Check your rights."
+msgstr "Le site #%1$s n’est pas disponible pour la copie. Vérifiez vos droits."
+
+#: src/Job/DuplicateSite.php:190
+msgid "Check logs: an error occurred."
+msgstr "Vérifier les journaux : une erreur est survenue."
+
+#: src/Job/DuplicateSite.php:233
+#, php-format
+msgid "Site settings of \"%1$s\" successfully removed."
+msgstr "Les paramètres du site \"%1$s\" ont été supprimés."
+
+#: src/Job/DuplicateSite.php:267
+#, php-format
+msgid "%1$d site permissions removed from \"%2$s\"."
+msgstr "%1$d permissions supprimées du site \"%2$s\"."
+
+#: src/Job/DuplicateSite.php:306
+#, php-format
+msgid "%1$d site pages removed from \"%2$s\"."
+msgstr "%1$d pages supprimées du site \"%2$s\"."
+
+#: src/Job/DuplicateSite.php:320
+#, php-format
+msgid "%1$d collecting forms removed from \"%2$s\"."
+msgstr "%1$d formulaires de collecte ont été supprimés du site \"%2$s\"."
+
+#: src/Job/DuplicateSite.php:355
+#, php-format
+msgid "Site settings of \"%1$s\" successfully copied into \"%2$s\"."
+msgstr ""
+"Les paramètres du site \"%1$s\" ont été copiés dans \"%2$s\" avec succès."
+
+#: src/Job/DuplicateSite.php:417
+#, php-format
+msgid "The page slug \"%1$s\" from the source has been renamed \"%2$s\"."
+msgstr "Le chemin de la page source \"%1$s\" a été renommé \"%2$s\"."
+
+#: src/Job/DuplicateSite.php:423
+#, php-format
+msgid "Unable to copy page \"%1$s\" of site \"%2$s\". The page is skipped."
+msgstr ""
+"Impossible de copier la page \"%1$s\" du site \"%2$s\". La page a été "
+"ignorée."
+
+#: src/Job/DuplicateSite.php:433
+#, php-format
+msgid ""
+"%1$d site pages of \"%2$s\" successfully copied into \"%3$s\" (mode \"%4$s"
+"\")."
+msgstr ""
+"%1$d pages du site \"%2$s\" ont été copiées avec succès dans le site \"%3$s"
+"\" (mode \"%4$s\")."
+
+#: src/Job/DuplicateSite.php:534
+#, php-format
+msgid ""
+"%1$d collecting forms from site \"%2$s\" were successfully copied into \"%3$s"
+"\"."
+msgstr ""
+"%1$d formulaires de collecte du site \"%2$s\" ont été copiés avec succès "
+"dans \"%3$s\"."
+
+#: src/Site/BlockLayout/MirrorPage.php:42
+msgid "Mirror page"
+msgstr "Page miroir"
+
+#: src/Site/BlockLayout/MirrorPage.php:50
+msgid "A page should be selected to create a mirror page."
+msgstr "Une page doit être sélectionnée pour créer un bloc Page miroir."
+
+#: src/Site/BlockLayout/MirrorPage.php:55
+msgid "A mirror page cannot be inside itself."
+msgstr "Une page mirroir ne peut pas être à l’intérieur d’elle-même."
+
+#: src/Site/BlockLayout/MirrorPage.php:63
+#: src/Site/BlockLayout/MirrorPage.php:69
+msgid "A mirror page cannot use a page that uses it recursively as a block."
+msgstr ""
+"Une page miroir ne peut pas utiliser une page qui l’utilise récursivement "
+"dans un bloc."
+
+#: src/Site/BlockLayout/MirrorPage.php:113
+#, php-format
+msgid ""
+"Mirror page block #%d of page \"%s\" of site \"%s\" should be updated: it "
+"refers to a removed page."
+msgstr ""
+"Le bloc Page miroir #%d de la page \"%s\" du site \"%s\" doit être mis à "
+"jour : il fait référence à une page supprimée."
+
+#: src/Site/BlockLayout/MirrorPage.php:141
+#, php-format
+msgid "Cannot render this mirror page for now: %s."
+msgstr "Impossible de rendre la page miroir actuellement : %s."
+
+#~ msgid "Copy data from another site"
+#~ msgstr "Copier les données d’un autre site"
+
+#~ msgid "The site \"%1$s\" has been copied into the current site \"%2$s\"."
+#~ msgstr "Le site \"%1$s\" a été copié dans le site actuel \"%2$s\"."
+
+#~ msgid "Remove existing pages"
+#~ msgstr "Supprimer les pages existantes"
+
+#~ msgid "Duplicate config and pages of site"
+#~ msgstr "Dupliquer la config et les pages du site"
+
+#~ msgid "Site metadata"
+#~ msgstr "Métadonnées du site"
+
+#~ msgid "Simple page"
+#~ msgstr "Page simple"

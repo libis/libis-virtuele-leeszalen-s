@@ -1,0 +1,87 @@
+<?php
+$translate = $this->plugin('translate');
+?>
+<section class="section page-browse-section">
+  <div class="container">
+    <?php if ($this->heading): ?>
+      <h2 class="title is-3 is-family-secondary"><?php echo $block->dataValue('heading');?></h2>
+    <?php endif; ?>
+
+    <?php if($block->dataValue('text')):?>
+      <div class="columns">
+        <div class="column is-8">
+          <div class="content">
+              <?php echo $block->dataValue('text');?>
+          </div>
+        </div>
+      </div>
+    <?php endif; ?>
+
+    <div class="columns is-multiline">
+      <?php
+      foreach ($pages as $page):
+        $heading = $page->page()->title();
+        $body = $page->dataValue('summary');
+      ?>
+      <div class="column">
+        <?php
+          $asset = $page->dataValue('cover');
+
+          if (!$asset) {
+              $mediaurl = "";
+          }else{
+            try {
+                $media = $this->api()->read('assets', ['id' => $asset])->getContent();
+                $mediaurl = $media->assetUrl('large');
+            } catch (NotFoundException $e) {
+                $mediaurl = "";
+            }
+          }
+
+          $url = $page->page()->url();
+        ?>
+        <a href="<?php echo $url;?>">
+          <div class="card equal-height">              
+            <div class="bg-block"
+              style="background:url(<?php echo  $mediaurl;?>) no-repeat center 20%;background-color:#aaa;background-size: cover;"
+              >
+            </div>
+            <div class="card-top">
+              <h3 class="title is-3 is-family-secondary">
+                  <?php echo $heading;?>
+              </h3>
+            </div>
+            <div class="card-content">
+              <div class="content">
+                <?php if ($body): ?>
+                  <?php
+                    if(strlen($body) > 200):
+                      $body = substr($body, 0, 200);
+                      $body = substr($body, 0, strrpos($body, ' ')).' ...';
+                    endif;
+                  ?>
+                    <?php echo $body; ?>
+                <?php endif; ?>
+                <?php if($page->dataValue('credits')):?>
+                  <hr>
+                  Door <?php echo $page->dataValue('credits'); ?>
+                <?php endif;?>  
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <?php if($block->dataValue('link')):?>
+      <div class="has-text-right">
+        <a class="button is-outlined is-white" href="<?php echo $block->dataValue('link');?>">
+          <span>Lees meer</span>
+          <span class="icon is-small">
+            <i class="fas fa-angle-right"></i>
+          </span>
+        </a>
+      </div>  
+    <?php endif;?>                
+  </div>
+</section>

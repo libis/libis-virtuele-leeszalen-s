@@ -1,0 +1,39 @@
+<!-- text/contact with border -->
+<div class="section">
+  <div class="container">
+    <div class="columns">
+      <?php $i = 1;?>
+      <?php foreach($attachments as $attachment):?>
+        <div class="column is-6">
+          <div class="columns">
+            <div class="column is-4">
+              <div class="">
+                <?php
+                    $media = $attachment->media();
+
+                    if($media):
+                      $url = $media->thumbnailUrl('square');
+                      $url = str_replace('http:', '', $url);
+                      echo '<img src="'.$url.'" />';
+                    endif;
+                ?>
+              </div>
+            </div>
+            <div class="column is-8">
+                <div>
+                    <h4 class="subtitle is-6">
+                        <?php echo $block->dataValue('functie'.$i);?>
+                    </h4>
+                    <h3 class="title is-5" style="margin-bottom:0.5rem;"><a href="<?php echo $block->dataValue('link'.$i);?>"><?php echo $block->dataValue('name'.$i);?></a></h3>
+                    <span class="icon icon--phone"><i class="fas fa-phone"></i></span> <a href="tel:011223344"><?php echo $block->dataValue('tel'.$i);?></a><br>
+                    <span class="icon icon--mail"><i class="fas fa-envelope"></i></span> <a href="mailto:<?php echo $block->dataValue('mail'.$i);?>"><?php echo $block->dataValue('mail'.$i);?></a>
+
+                </div>
+            </div>
+          </div>
+        </div>
+        <?php $i++;?>
+      <?php endforeach;?>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,80 @@
+<?php
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+$this->headLink()->appendStylesheet($this->assetUrl('css/group.css', 'Group'));
+$this->headScript()->appendFile($this->assetUrl('js/group.js', 'Group'), 'text/javascript', ['defer' => 'defer']);
+$removeStr = $escape($translate('Remove group'));
+$groupTemplate = '
+<tr>
+    <td class="group-name"></td>
+    <td>
+        <ul class="actions">
+            <li>
+                <a href="#" class="o-icon-delete" title="' . $removeStr . '" aria-label="' . $removeStr . '"></a>
+            </li>
+        </ul>
+        <input type="hidden" name="o-module-group:group[]">
+    </td>
+</tr>';
+?>
+<fieldset id="groups" class="section group" aria-labelledby="groups-label">
+    <legend id="groups-legend"><?= $translate('Groups') ?></legend>
+    <table id="group-resources" data-tablesaw-mode="stack" class="tablesaw tablesaw-stack <?= $resource && $groups ? '' : 'empty' ?>">
+        <thead>
+        <tr>
+            <th><?= $translate('Group') ?></th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php
+        if ($resource && $groups):
+            $resourceName = $resource->getControllerName();
+            $group = reset($groups);
+            $updateRight = $group->userIsAllowed('update');
+            $browseUserRight = $this->userIsAllowed('Omeka\Controller\Admin\User', 'browse');
+        ?>
+        <?php foreach ($groups as $group): ?>
+        <tr>
+            <td>
+                <span><?= $this->hyperlink($group->name(), $group->adminUrl()) ?></span>
+                <ul class="actions">
+                    <li>
+                        <?php if ($browseUserRight): ?>
+                        <a href="<?= $escape($group->urlEntities('user')) ?>"
+                            class="o-icon-user"
+                            aria-label="<?= $escape($translate('Users within this group')) ?>"
+                            title="<?= $escape($translate('Users within this group')) ?>"></a>
+                        <?php endif; ?>
+                        <a href="<?= $escape($group->urlEntities('item-set')) ?>"
+                            class="o-icon-item-sets"
+                            aria-label="<?= $escape($translate('Item sets within this group')) ?>"
+                            title="<?= $escape($translate('Item sets within this group')) ?>"></a>
+                        <a href="<?= $escape($group->urlEntities('item')) ?>"
+                            class="o-icon-items"
+                            aria-label="<?= $escape($translate('Items within this group')) ?>"
+                            title="<?= $escape($translate('Items within this group')) ?>"></a>
+                        <a href="<?= $escape($group->urlEntities('media')) ?>"
+                            class="o-icon-media"
+                            aria-label="<?= $escape($translate('Media within this group')) ?>"
+                            title="<?= $escape($translate('Media within this group')) ?>"></a>
+                        <a href="#" class="o-icon-delete" title="<?= $removeStr ?>" aria-label="<?= $removeStr ?>"></a>
+                    </li>
+                </ul>
+                <input type="hidden" name="o-module-group:group[]" value="<?= $escape($group->name()) ?>">
+            </td>
+        </tr>
+        <?php endforeach; ?>
+        <?php endif; ?>
+        </tbody>
+    </table>
+    <div class="no-resources">
+        <p>
+            <?= $translate('There are no groups for this resource.') ?>
+            <br />
+            <?= $translate('Add existing groups using the interface to the right.') ?>
+        </p>
+    </div>
+    <button id="group-selector-button" class="mobile-only"><?= $translate('Add a group') ?></button>
+    <span id="group-template" data-template="<?= $escape($groupTemplate) ?>"></span>
+    <?= $this->groupSelector() ?>
+</fieldset>

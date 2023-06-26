@@ -6,10 +6,10 @@ services:
     ports:
       - "9003:80"   
     volumes:
-      - ./modules/:/var/www/html/test/modules/
-      - ./themes/:/var/www/html/test/themes/
-      - ./files/:/var/www/html/test/files/
-      - ./config/:/var/www/html/test/config/
-      - ./htaccess:/var/www/html/test/.htaccess
+      - ./modules/:/var/www/html/virtuele-leeszalen/modules/
+      - ./themes/:/var/www/html/virtuele-leeszalen/themes/
+      - ./files/:/var/www/html/virtuele-leeszalen/files/
+      - ./config/:/var/www/html/virtuele-leeszalen/config/
+      - ./htaccess:/var/www/html/virtuele-leeszalen/.htaccess
       - ./entrypoint.sh:/usr/local/bin/entrypoint.sh
     restart: "no"

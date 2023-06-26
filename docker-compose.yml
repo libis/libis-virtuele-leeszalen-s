@@ -2,7 +2,7 @@ version: '3'
 
 services:
   omeka-s:
-    image: omeka_s_v3:latest
+    image: omeka_s_v4:latest
     ports:
       - "9003:80"   
     volumes:

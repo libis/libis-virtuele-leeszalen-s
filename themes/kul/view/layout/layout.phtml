@@ -27,7 +27,22 @@ if (strpos($url, 'page/home') !== false) {
 }else{
   $home = false;
 }
+
+//for testing plugin
+if (strpos($url, 'page/almatest') !== false) {
+  $almaTest = true;
+}else{
+$almaTest = false;
+}
 ?>
+<style>
+#itemfiles {
+  height: 700px;
+}
+#itemfiles > .media {
+  display: none;
+}
+</style>
 <?php echo $this->doctype(); ?>
 <?php echo $this->htmlElement('html'); ?>
     <head>
@@ -130,7 +145,72 @@ if (strpos($url, 'page/home') !== false) {
           
         </div>
       </nav>  
+<!-- Test pagina Alma plugin -->
+<?php
+if($almaTest){
+  $resultaat = [];
+  $resultaat['titel'] ='';
+  $resultaat['publicationDate'] = '';
 
+  if(isset($_POST['rfid']) && !empty($_POST['rfid'])){
+
+$almaws = 'https://api-eu.hosted.exlibrisgroup.com/almaws/v1';
+$apikey = 'l7xx486882b63a7b493088e28bc962d284c4'; //32KUL_KADOC AlmaProd
+$mmsid = $_POST['rfid']; //9992793559801480
+$endpoint = $almaws . "/bibs/" . $mmsid . '?view=full&expand=None&apikey=' . $apikey;
+$resultaat = [];
+
+echo $endpoint;
+
+$curl = curl_init();
+curl_setopt_array($curl, [
+  CURLOPT_URL => $endpoint,
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_CUSTOMREQUEST => "GET",
+  CURLOPT_HTTPHEADER => [
+      'accept: application/json',
+  ],
+]);
+
+$response = curl_exec($curl);
+$err = curl_error($curl);
+
+curl_close($curl);
+
+if ($err) {
+  echo "cURL Error #:" . $err;
+} else {
+  $res = json_decode($response, true);
+  var_dump($res);
+}
+$resultaat['titel'] = $res['title'];
+$resultaat['publicationDate'] = $res['date_of_publication'];
+// echo $resultaat['titel'];
+// echo $resultaat['publicationDate'];
+  }
+  echo '<br>TITEL: ' . $resultaat['titel'] . '<br>';
+  echo $resultaat['publicationDate'];
+  $jsonback = json_encode($resultaat);
+  var_dump($jsonback);
+?>
+<section class="section">
+  <div class="container">
+    <div class="text-center" style="padding-bottom: 2rem;">Geef een mmsid op</div>
+    <form name="form" id="rfid" action="" method="POST">
+      <input type="text" id="rfidcard" name="rfid" value="" autofocus>
+      <button class="btn" type="submit" style="margin-top: 5px;">Show Email</button>
+    </form>
+    <div class="text-center" style="padding-bottom: 2rem;">Laad egegvens zien</div>
+    <form name="form" id="toonmmsid" action="" method="POST">
+      <input type="text" id="toonmmsid" name="toonmmsid" value="">
+      <button class="btn" type="submit" style="margin-top: 5px;">Toon gegevens</button>
+    </form>
+  </div>
+</section>
+<?php } ?>
+
+
+<!-- Test end -->
       <div class="wrapper">       
         <?php echo $this->content; ?>            
       </div>
@@ -283,10 +363,10 @@ if (strpos($url, 'page/home') !== false) {
           </a>
           <ul class="dropdown-menu">
             <li>
-              <a href="https://services3.libis.be/test/s/kul-nl">Nederlands</a>
+              <a href="https://services3.libis.be/virtuele-leeszalen/s/kul-nl/page/home">Nederlands</a>
             </li>
             <li>
-              <a href="https://services3.libis.be/test/s/kul">English</a>
+              <a href="https://services3.libis.be/virtuele-leeszalen/s/kul/page/home">English</a>
             </li>
           </ul>
         </li>

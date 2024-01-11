@@ -1,0 +1,7 @@
+<?php
+$itemMedia = $resource->media();
+$sortedMedia = $this->sortMedia($itemMedia);
+if (isset($sortedMedia['lightMedia'])):
+    echo $this->lightGalleryOutput($sortedMedia['lightMedia']);
+endif;
+?>

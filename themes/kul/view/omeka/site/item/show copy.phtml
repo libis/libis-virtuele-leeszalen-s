@@ -1,0 +1,175 @@
+<?php
+use Laminas\Http\Client;
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+$this->htmlElement('body')->appendAttribute('class', 'item resource show');
+$embedMedia = $this->siteSetting('item_media_embed', false);
+$itemMedia = $item->media();
+$template = $item->resourceTemplate();
+if($template):
+  $type = $template->label();
+else:
+  $type = "";
+endif;
+?>
+<style>
+  a {
+    text-decoration: none;
+  }
+</style>
+<div class="container">
+  <div >
+    <div id="portal-breadcrumbs" class="breadcrumbs" style="display:block;">
+      <span class="breadcrumb-item">
+          <a href="<?php echo $site->url();?>">Home</a>
+      </span>
+
+      <?php if($type == 'News'):?>
+        <span class="breadcrumb-item" dir="ltr">
+          <a href="<?php echo $site->url()."/page/news";?>">News</a>
+        </span>
+      <?php else:?>
+        <span class="breadcrumb-item">
+          <a href="<?php echo $site->url()."/search";?>">Catalogue</a>         
+        </span>    
+      <?php endif;?>
+      <span class="breadcrumb-item active">
+        <?php echo $item->displayTitle(); ?>
+      </span>
+
+    </div>
+  </div>
+ 
+  <h1><?php echo $item->displayTitle(); ?></h1>
+  <?php if($type == 'Nieuws'):?>
+    <!--<h2 class="subtitle is-6"><?php echo date('d-m-Y',strtotime($item->value('dcterms:date'))); ?></h2>-->
+  <?php endif;?> 
+
+  <?php
+    $viewerlink = '';$fls=[];
+  ?>
+
+  <?php if($type == 'News'):?>
+    <div class="row">
+    <?php if (!$embedMedia && $itemMedia): ?>
+      <div class="col-md-4">
+        <?php if(sizeof($itemMedia) > 1):?>
+          <div class="slider-for">
+            <?php foreach($itemMedia as $media):?>
+              <div class="has-text-centered">
+                <?php $url = str_replace('http:', '', $media->thumbnailUrl('large'));?>
+                  <img src="<?php echo $url;?>">
+                <?php if($media->value('dcterms:title')):?>
+                  <figcaption>
+                    <?php echo $media->value('dcterms:title');?>
+                  </figcaption>
+                <?php endif;?>
+              </div>
+            <?php endforeach;?>
+          </div>
+        <?php else: ?>
+          <div class="beeld">
+            <?php $url = str_replace('http:', '', $itemMedia[0]->thumbnailUrl('large'));?>
+            <img src="<?php echo $url;?>">
+            <?php if($itemMedia[0]->value('dcterms:title')):?>
+              <figcaption style="font-size:0.9rem;font-style:italic;">
+                <?php echo $itemMedia[0]->value('dcterms:title');?>
+            </figcaption>
+            <?php endif;?>
+          </div>
+        <?php endif;?>
+      </div>
+    <?php endif; ?>
+    <div class="col-md-8">
+    <div class="text-box card card-gray">
+          <div class="card-body">
+        <?php $date =  $item->value('dcterms:date');?>
+        <?php if($date):?>
+          <?php $date = new DateTime($date->asHtml());?>
+          <div style="margin-bottom:0.6rem;color:#666;">
+            <?php echo $date->format('d-m-Y');?>
+          </div>            
+        <?php endif;?> 
+        <?php if($item->value('dcterms:description')):?>
+          <?php echo $item->value('dcterms:description');?>        
+        <?php endif;?>
+        </div>
+      </div>
+    </div>
+  </div>
+  <?php else:?>
+    <div class="row">
+      <?php if (!$embedMedia && $itemMedia): ?>
+        <div class="col-xs-12 col-md-4">
+          <?php foreach($itemMedia as $media):?>
+            <div class="has-text-centered">
+              <?php $url = str_replace('http:', '', $media->thumbnailUrl('medium'));?>
+              <?php $link = str_replace('http:', '', $media->thumbnailUrl('large'));?>
+              
+              <?php if($viewerlink):?>
+                  <?php $link = $viewerlink;?>
+              <?php endif;?> 
+              <a target="_blank" href="<?php echo $link;?>"><img src="<?php echo $url;?>"></a>
+            </div>
+          <?php endforeach;?>
+        </div>         
+      <?php endif;?>
+      
+      <div class="col-xs-12 col-md-8">
+        <div class="text-box card card-gray">
+          <div class="card-body">
+            <?php if($item->value('dcterms:description')):?>
+              <p><?php echo $item->value('dcterms:description');?></p>
+            <?php endif;?>
+            <?php echo $item->displayValues(); ?>
+          </div>
+        </div>
+      </div>
+    </div>     
+    <?php
+      $plugins = $this->getHelperPluginManager();
+      $hasNext = $plugins->has('previousResource');
+    ?>
+    <?php if ($hasNext): ?>
+    <div class="previous-next-items">
+        <?php if ($previous = $this->previousResource($resource)): ?>
+        <?= $previous->link($translate('Previous item'), null, ['class' => 'previous-item']) ?>
+        <?php endif; ?>
+        <?php if ($next = $this->nextResource($resource)): ?>
+        <?= $next->link($translate('Next item'), null, ['class' => 'next-item']) ?>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+        </div>
+    </section>
+<?php endif;?>
+<?php
+$page = $this->params()->fromQuery('page', 1);
+$property = $this->params()->fromQuery('property');
+$subjectValues = $item->subjectValues();
+?>
+</div>
+
+<?php $this->trigger('view.show.after'); ?>
+<script>
+  $(document).ready(function(){
+    $('.slider-for').slick({
+      slidesToShow: 1,
+      slidesToScroll: 1,
+      arrows: false,
+      fade: true,
+      centerMode: true
+    });
+    $('.slider-nav').slick({
+      slidesToShow: 10,
+      slidesToScroll: 1,
+      asNavFor: '.slider-for',
+      focusOnSelect: true
+    });
+
+    $('.slide-wrap').on('contextmenu', 'img', function(e){ 
+      return false; 
+    });
+
+  });
+</script>

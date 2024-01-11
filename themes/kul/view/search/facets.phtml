@@ -40,6 +40,25 @@ if (!empty($itemSet)) {
 $options = $searchPage->setting('facet', []);
 ?>
 
+<style>
+    li,ul{
+        list-style-type: none;
+    }
+    details,summary{
+        display: list-item;
+    }
+    h4{
+        display:inline;
+    }
+    .apply-facets-top{
+        padding-bottom: 5%;
+    }
+    .search-facet-items{
+        overflow: auto;
+        max-height: 150px;
+    }
+</style>
+
 <aside class="search-facets">
 
     <h3><?= $translate('Facets') ?></h3>
@@ -65,18 +84,25 @@ $options = $searchPage->setting('facet', []);
         </div>
         <?php endif; ?>
 
-        <?php if (empty($facets) && empty($activeFacets)): ?>
+        <?php if (empty($facets) && empty($activeFacets)): ?> 
         <p><?= $translate('No facets.') ?></p>
         <?php else: ?>
         <ul class="search-facets-list">
             <?php foreach ($facets as $name => $facetValues): ?>
             <li class="search-facet">
-                <h4><?= $translate($facetLabel($name)) ?></h4>
-                <?php if (($options['facets'][$name]['type'] ?? 'Checkbox') === 'Select'): ?>
-                <?= $facetSelect($name, $facetValues, $options) ?>
-                <?php else: ?>
-                <?= $facetElements($name, $facetValues, $options) ?>
-                <?php endif; ?>
+            <details>
+                    <?php if(count($facetValues) > 10):?>
+                    <input type="text" id="facetSearch" oninput="searchFacet()" placeholder="Zoeken in filter..." style="margin:5% 0%;">
+                    <?php endif;?>
+                    <summary>
+                        <h4><?= $translate($facetLabel($name)) ?></h4>
+                    </summary>
+                    <?php if (($options['facets'][$name]['type'] ?? 'Checkbox') === 'Select'): ?>
+                    <?= $facetSelect($name, $facetValues, $options) ?>
+                    <?php else: ?>
+                    <?= $facetElements($name, $facetValues, $options) ?>
+                    <?php endif; ?>
+                </details>
             </li>
             <?php endforeach; ?>
         </ul>
@@ -93,16 +119,36 @@ $options = $searchPage->setting('facet', []);
 </aside>
 
 <script>
-    $(document).ready(function(){
-        $( ".more-link a" ).click(function(e) {
-            e.preventDefault();
-            $(this).parent().hide();
-            $(this).parent().next( "div" ).show();
-        });
-        $( ".less-link a" ).click(function(e) {
-            e.preventDefault();
-            $(this).parent().parent().hide();
-            $(this).parent().parent().prev( ".more-link" ).show();
-        });
+ $(document).ready(function(){
+    $( ".more-link a" ).click(function(e) {
+        e.preventDefault();
+        $(this).parent().hide();
+        $(this).parent().next( "div" ).show();
     });
+     $( ".less-link a" ).click(function(e) {
+        e.preventDefault();
+        $(this).parent().parent().hide();
+        $(this).parent().parent().prev( ".more-link" ).show();
+    });
+});
+function searchFacet() {
+  // Declare variables
+  var input, filter, ul, li, label, i, txtValue;
+  input = document.getElementById('facetSearch');
+  filter = input.value.toUpperCase();
+  details = input.parentElement;
+  ul = details.getElementsByTagName('ul')[0];
+  li = ul.getElementsByTagName('li');
+
+  // Loop through all list items, and hide those who don't match the search query
+  for (i = 0; i < li.length; i++) {
+    label = li[i].getElementsByTagName("label")[0];
+    txtValue = label.textContent || label.innerText;
+    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+      li[i].style.display = "";
+    } else {
+      li[i].style.display = "none";
+    }
+  }
+}
 </script>

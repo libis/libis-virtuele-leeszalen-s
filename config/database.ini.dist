@@ -1,7 +1,0 @@
-user     =
-password =
-dbname   = 
-host     = host.docker.internal
-;port     =
-;unix_socket =
-;log_path =

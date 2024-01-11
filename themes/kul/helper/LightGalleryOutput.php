@@ -23,7 +23,8 @@ class LightGalleryOutput extends AbstractHelper
 
         foreach ($files as $file) {
             $media = $file['media'];
-            $source = ($media->originalUrl()) ? $media->originalUrl() : $media->source(); 
+            $oSource = ($media->originalUrl()) ? $media->originalUrl() : $media->source(); 
+            $source = str_replace('http://', 'https://', $oSource);
             $mediaCaptionOptions = [
                 'none' => '',
                 'title' => 'data-sub-html="' . $media->displayTitle() . '"',

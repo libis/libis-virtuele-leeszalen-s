@@ -1,11 +1,43 @@
 <?php
 $translate = $this->plugin('translate');
-?>
-<?php $this->htmlElement('body')->appendAttribute('class', 'media resource show'); ?>
+$this->htmlElement('body')->appendAttribute('class', 'item resource show lg-from-hash');
 
-<?php echo $this->pageTitle($media->displayTitle(), 2); ?>
+$main = $this->resourcePageBlocks($media, 'main')->hasBlocks();
+?>
+<!-- <?php echo $this->pageTitle($media->displayTitle(), 2); ?>
 <h3><?php echo $translate('Media'); ?></h3>
 <?php $this->trigger('view.show.before'); ?>
 <?php echo $media->render(); ?>
 <?php echo $media->displayValues(); ?>
-<?php $this->trigger('view.show.after'); ?>
+<?php $this->trigger('view.show.after'); ?> -->
+
+<style>
+  a {
+    text-decoration: none;
+  }
+</style>
+
+<section class="container">
+<div >
+    <div id="portal-breadcrumbs" class="breadcrumbs" style="display:block;">
+      <span class="breadcrumb-item">
+          <a href="<?php echo $site->url();?>">Home</a>
+      </span>
+        <span class="breadcrumb-item">
+          <a href="<?php echo $site->url()."/".$translate('search');?>"><?= $translate('Search') ?></a>          
+        </span>    
+      <span class="breadcrumb-item active">
+        <?php echo $media->item()->displayTitle(); ?>
+      </span>
+
+    </div>
+  </div>
+    <h1><?php echo $this->pageTitle($media->item()->displayTitle(), 2); ?></h1>
+    <?php if($main): ?>
+    <div class="row">
+        <div class="main-content col-md-12">
+        <?php echo $this->resourcePageBlocks($media, 'main')->getBlocks(); ?>
+        </div>
+    </div>
+    <?php endif; ?>
+</section>

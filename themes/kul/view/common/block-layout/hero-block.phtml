@@ -25,10 +25,11 @@
 
       <p><?php echo $block->dataValue('text');?></p>
 
+       <?php if($block->dataValue('link')):?> 
       <div class="inline">
         <div class="inline-item"><a class="btn btn-primary" href="<?php echo $block->page()->site()->url().$block->dataValue('link');?>"><?php echo $block->dataValue('link_text');?></a></div>
       </div>
-
+        <?php endif;?>
       <?php $lang = $this->lang();?>
       <?php $lang_r = array(
         "en-US" => array(
@@ -45,7 +46,7 @@
       <form
       class="form-search"
       role="search"
-      action="<?php echo $block->page()->site()->url(); ?>/search"
+      action="<?php echo $block->page()->site()->url(); ?>/zoeken"
       method="get"
       name="searchform"
       >

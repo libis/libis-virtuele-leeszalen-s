@@ -1,15 +1,11 @@
 <?php
 $translate = $this->plugin('translate');
 ?>
-<nav class="pagination" role="navigation" aria-label="pagination">
+<nav class="pagination col" role="navigation" aria-label="pagination" style="margin-top:0%;">
 <?php if ($totalCount): ?>
-    <?php if ($currentPage != 1): ?>
-    <?php echo $this->hyperlink($translate('Previous'), $previousPageUrl, ['class' => 'pagination-previous', 'title' => $translate('Previous'), 'aria-label' => $translate('Previous')]); ?>
-    <?php endif; ?>
-
     <form method="GET" action="">
         <?php echo $this->queryToHiddenInputs(['page']); ?>
-        <input type="text" name="page" class="page-input-top" value="<?php echo $currentPage; ?>" size="4" <?php echo ($pageCount == 1) ? 'readonly' : ''; ?> aria-label="<?php echo $translate('Page'); ?>">
+        <input type="text" name="page" class="page-input-top" style="width: 25%;" value="<?php echo $currentPage; ?>" size="1" <?php echo ($pageCount == 1) ? 'readonly' : ''; ?> aria-label="<?php echo $translate('Page'); ?>">
         <span class="page-count"><?php echo sprintf($translate('of %s'), $pageCount); ?></span>
         <?php
         $from = $offset + 1;
@@ -19,13 +15,16 @@ $translate = $this->plugin('translate');
     
     </form>
 
-    
-    <?php if ($currentPage < $pageCount): ?>
-    <?php echo $this->hyperlink($translate('Next'), $nextPageUrl, ['class' => 'pagination-next', 'title' => $translate('Next'), 'aria-label' => $translate('Next')]); ?>
-    <?php endif; ?>
-
 
 <?php else: ?>
     <?php echo $translate('0 results'); ?>
 <?php endif; ?>
 </nav>
+<span class="text-right col">
+    <?php if ($currentPage != 1): ?>
+    <?php echo $this->hyperlink($translate('Previous'), $previousPageUrl, ['class' => 'pagination-previous btn btn-ghost-inv', 'title' => $translate('Previous'), 'style' => 'margin-right: 0;','aria-label' => $translate('Previous')]); ?>
+    <?php endif; ?>
+    <?php if ($currentPage < $pageCount): ?>
+    <?php echo $this->hyperlink($translate('Next'), $nextPageUrl, ['class' => 'pagination-next btn btn-ghost-inv', 'title' => $translate('Next'), 'style' => 'margin-right: 0;', 'aria-label' => $translate('Next')]); ?>
+    <?php endif; ?>
+    </span>

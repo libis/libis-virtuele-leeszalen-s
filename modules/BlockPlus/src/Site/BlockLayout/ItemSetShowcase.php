@@ -70,6 +70,7 @@ class ItemSetShowcase extends AbstractBlockLayout
             'itemSets' => $itemSets,
             'thumbnailType' => $block->dataValue('thumbnail_type', 'square'),
             'showTitleOption' => $block->dataValue('show_title_option', 'item_title'),
+            'mediaUrlOption' => $block->dataValue('media_url', 'item_set_mediaurl'),
         ];
         $template = $block->dataValue('template', self::PARTIAL_NAME);
         return $template !== self::PARTIAL_NAME && $view->resolver($template)

@@ -30,7 +30,7 @@ if (isset($displayParts['per_pages']) && $perPages = $searchPage->subSetting('pa
     // Don't display unmanaged per page from the query, but set the default Omeka per page.
     // Can be simplified in a theme.
     $setting = $plugins->get('setting');
-    $defaultPerPage = $this->status()->isSiteRequest() ? ($plugins->get('siteSetting')('pagination_per_page') ?: $setting('pagination_per_page', 25)) : $setting('pagination_per_page', 25);
+    $defaultPerPage = $this->status()->isSiteRequest() ? ($plugins->get('siteSetting')('pagination_per_page') ?: $setting('pagination_per_page', 24)) : $setting('pagination_per_page', 24);
     $perPages = array_replace([(int) $defaultPerPage => sprintf($translate('Results by %d'), $defaultPerPage)], $perPages);
     ksort($perPages);
     $perPage = $query->getPerPage() ?: null;
@@ -42,7 +42,7 @@ if (isset($displayParts['per_pages']) && $perPages = $searchPage->subSetting('pa
 <?php endif; ?>
 
 <?php if (isset($displayParts['paginator'])): ?>
-<div class="search-results-count">
+<div class="search-results-count row" style="width: 100%;">
     <?= $this->pagination('common/pagination') ?>
 </div>
 <?php endif; ?>
@@ -57,9 +57,9 @@ if (isset($displayParts['per_pages']) && $perPages = $searchPage->subSetting('pa
 </div>
 <?php endif; ?>
 
-<?php if (isset($displayParts['sort']) && $sortFields = $searchPage->subSetting('sort', 'fields')): ?>
+<!-- <?php if (isset($displayParts['sort']) && $sortFields = $searchPage->subSetting('sort', 'fields')): ?>
 <?= $this->searchSortSelector($query, $sortFields) ?>
-<?php endif; ?>
+<?php endif; ?> -->
 
 <?php if (isset($displayParts['grid_list']) && ($gridListMode = $searchPage->subSetting('display', 'grid_list_mode', 'auto')) && !in_array($gridListMode, ['list_only', 'grid_only'])): ?>
 <div class="search-results-display">

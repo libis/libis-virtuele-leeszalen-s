@@ -7,7 +7,24 @@
  * @var \AdvancedSearch\Response $response
  * @var string $title
  * @var string $resourceName
+ * @var string $resultPart
  */
+$plugins = $this->getHelperPluginManager();
+$escape = $plugins->get('escapeHtml');
+$translate = $plugins->get('translate');
+$translatePlural = $plugins->get('translatePlural');
+
+ // Default values of the module.
+$displayParts = [
+    'search_filters' => 'header',
+    'paginator' => 'header',
+    'per_pages' => 'header',
+    'sort' => 'header',
+    'grid_list' => 'header',
+    'grid_list_mode' => 'auto',
+];
+$displayParts = $searchPage ? $searchPage->setting('display', $displayParts) : $displayParts;
+$displayParts = array_filter($displayParts, function ($v) use ($resultPart) { return in_array($v, [$resultPart, 'both']); });
 
 $resources = $response->getResources($resourceName);
 // A check is done: when page is not first, the resources may be empty even with results.
@@ -35,15 +52,22 @@ $gridListMode = $searchPage ? $searchPage->subSetting('display', 'grid_list_mode
 $defaultThumbnail = '<img src="' . $assetUrl('thumbnails/default.png', 'Omeka', true) . '" title="' . $translate('No media') . '"/>';
 ?>
 
+<div class="row">
 <?php if ($title): ?>
-<h3><?= $escape($title) ?></h3>
+<div class="col">
+<h3 style="padding: 10px 16px;"><?= $escape($title) ?></h3>
+</div>
 <?php endif; ?>
+<?php if (isset($displayParts['sort']) && $sortFields = $searchPage->subSetting('sort', 'fields')): ?>
+<?= $this->searchSortSelector($query, $sortFields) ?>
+<?php endif; ?>
+</div>
 <ul class="resource-list search-results-list grid" style="padding:0;margin:0;">
     <?php /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource */
     foreach ($resources as $resource):
         $resourceType = $resource->resourceName();
         $media = $resource->primaryMedia();
-        $thumbnail = $media ? $thumbnailHelper($media, 'square') : $defaultThumbnail;
+        $thumbnail = $media ? $thumbnailHelper($media, 'large') : $defaultThumbnail;
         $heading = $headingTerm ? $resource->value($headingTerm, ['lang' => $langValue]) : null;
         $heading = $heading ? $heading->asHtml() : $escape($resource->displayTitle($translate('[Untitled]'), $lang));
         $body = $bodyTerm ? $resource->value($bodyTerm, ['lang' => $langValue]) : null;
@@ -51,10 +75,10 @@ $defaultThumbnail = '<img src="' . $assetUrl('thumbnails/default.png', 'Omeka', 
     ?>
 
     <li class="resource <?= $resourceType ?>">
-        <div class="resource-thumbnail">
+        <div class="resource-thumbnail" style="border: solid #d4e7f3;">
             <?= $hyperlink->raw($thumbnail, $resource->url(), ['class' => 'resource-link']) ?>
         </div>
-        <div class="resource-metadata">
+        <div class="resource-metadata" style="text-align:center;">
             <h4><?= $resource->linkRaw($heading) ?></h4>
             <div class="description">
                 <?= $body ?>

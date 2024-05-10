@@ -35,7 +35,7 @@ $second = $this->resourcePageBlocks($item, 'second')->hasBlocks();
         </span>
       <?php else:?>
         <span class="breadcrumb-item">
-          <a href="<?php echo $site->url()."/search";?>">Catalogue</a>         
+          <a href="<?php echo $site->url()."/".$translate('search');?>"><?= $translate('Search') ?></a>          
         </span>    
       <?php endif;?>
       <span class="breadcrumb-item active">

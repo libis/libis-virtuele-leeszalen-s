@@ -107,7 +107,7 @@ $this->headScript()->appendFile($assetUrl('js/search.js', 'AdvancedSearch'), 'te
 
         <?php if (isset($response)):
         $documentCount = $response->getTotalResults();
-        ?>           
+        ?>          
     </div>
 </div>    
 <div class="row">
@@ -169,6 +169,7 @@ $this->headScript()->appendFile($assetUrl('js/search.js', 'AdvancedSearch'), 'te
                         'response' => $response,
                         'title' => sprintf($translatePlural('%s item', '%s items', $itemsCount), $itemsCount),
                         'resourceName' => 'items',
+                        'resultPart' => 'header',
                     ]) ?>
                     <?php endif; ?>
                 </div>

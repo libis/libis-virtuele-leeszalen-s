@@ -38,6 +38,7 @@ if (!empty($itemSet)) {
 }
 
 $options = $searchPage->setting('facet', []);
+$i = 0;
 ?>
 
 <style>
@@ -56,6 +57,9 @@ $options = $searchPage->setting('facet', []);
     .search-facet-items{
         overflow: auto;
         max-height: 150px;
+    }
+    label{
+        display: contents;
     }
 </style>
 
@@ -89,10 +93,11 @@ $options = $searchPage->setting('facet', []);
         <?php else: ?>
         <ul class="search-facets-list">
             <?php foreach ($facets as $name => $facetValues): ?>
+                <?php $i++;?>
             <li class="search-facet">
             <details>
                     <?php if(count($facetValues) > 10):?>
-                    <input type="text" id="facetSearch" oninput="searchFacet()" placeholder="Zoeken in filter..." style="margin:5% 0%;">
+                    <input type="text" id="facetSearch<?php echo $i;?>" oninput="searchFacet(<?php echo $i;?>)" placeholder="Zoeken in filter..." style="margin:5% 0%;">
                     <?php endif;?>
                     <summary>
                         <h4><?= $translate($facetLabel($name)) ?></h4>
@@ -131,10 +136,10 @@ $options = $searchPage->setting('facet', []);
         $(this).parent().parent().prev( ".more-link" ).show();
     });
 });
-function searchFacet() {
+function searchFacet(facet) {
   // Declare variables
   var input, filter, ul, li, label, i, txtValue;
-  input = document.getElementById('facetSearch');
+  input = document.getElementById('facetSearch' + facet);
   filter = input.value.toUpperCase();
   details = input.parentElement;
   ul = details.getElementsByTagName('ul')[0];

@@ -1,0 +1,23 @@
+<?php
+$media = $attachments[0]->media();
+$url = $media->thumbnailUrl("large");
+$text = $block->dataValue('text');
+$title = $block->dataValue('title');
+$link = $block->dataValue('link');
+$linktext = $block->dataValue('link_text');
+?>
+<div class="kul-card-image card card-gray card-cover card-inverse" style="max-height: 15em;">
+  <div class="card-img" style="background-image: url('<?php echo $url; ?>'); background-size: contain; background-repeat: repeat;">
+  </div>
+  <div class="card-img-overlay card-body">
+    <?php if($title):?>
+    <h2><?php echo $title;?></h2>
+    <?php endif;?>
+    <?php if($text):?>
+    <div><?php echo $text;?></div>
+    <?php endif;?>
+    <?php if($link):?>
+    <div><a class="btn btn-primary" href="<?php echo $link;?>"><?php echo $linktext;?></a></div>
+    <?php endif;?>
+  </div>
+</div>

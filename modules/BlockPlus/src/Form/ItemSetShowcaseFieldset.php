@@ -56,6 +56,16 @@ class ItemSetShowcaseFieldset extends Fieldset
                 ],
             ])
             ->add([
+                'name' => 'o:block[__blockIndex__][o:data][media_url]',
+                'type' => Element\Checkbox::class,
+                'options' => [
+                    'label' => 'Redirect to media', // @translate
+                    'checked_value' => 'item_set_media_url',
+                    'unchecked_value' => 'no_media_url',
+                    'use_hidden_element' => true,
+                ],
+            ])
+            ->add([
                 'name' => 'o:block[__blockIndex__][o:data][template]',
                 'type' => TemplateSelect::class,
                 'options' => [

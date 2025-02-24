@@ -1,8 +1,9 @@
-version: '3'
-
 services:
   omeka-s:
-    image: omeka_s_v4:latest
+    build: ./
+    networks:
+     - my-network
+    ports:
     ports:
       - "9003:80"   
     volumes:
@@ -10,6 +11,9 @@ services:
       - ./themes/:/var/www/html/virtuele-leeszalen/themes/
       - ./files/:/var/www/html/virtuele-leeszalen/files/
       - ./config/:/var/www/html/virtuele-leeszalen/config/
-      - ./htaccess:/var/www/html/virtuele-leeszalen/.htaccess
-      - ./entrypoint.sh:/usr/local/bin/entrypoint.sh
     restart: "no"
+    
+networks:
+  my-network:
+    external:
+      name: dev-network

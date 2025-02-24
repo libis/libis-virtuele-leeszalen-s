@@ -1,7 +1,7 @@
 <?php
 /**
  * @var \Laminas\View\Renderer\PhpRenderer $this
- * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchPage
+ * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig
  * @var \AdvancedSearch\Query $query
  * @var \AdvancedSearch\Response $response
  * @var \Omeka\Api\Representation\ItemSetRepresentation $itemSet
@@ -23,10 +23,10 @@ $displayParts = [
     'grid_list' => 'header',
     'grid_list_mode' => 'auto',
 ];
-$displayParts = $searchPage ? $searchPage->setting('display', $displayParts) : $displayParts;
+$displayParts = $searchConfig ? $searchConfig->setting('display', $displayParts) : $displayParts;
 $displayParts = array_filter($displayParts, function ($v) use ($resultPart) { return in_array($v, [$resultPart, 'both']); });
 
-if (isset($displayParts['per_pages']) && $perPages = $searchPage->subSetting('pagination', 'per_pages')) {
+if (isset($displayParts['per_pages']) && $perPages = $searchConfig->subSetting('pagination', 'per_pages')) {
     // Don't display unmanaged per page from the query, but set the default Omeka per page.
     // Can be simplified in a theme.
     $setting = $plugins->get('setting');
@@ -38,7 +38,7 @@ if (isset($displayParts['per_pages']) && $perPages = $searchPage->subSetting('pa
 ?>
 
 <?php if (isset($displayParts['search_filters'])): ?>
-<?= $this->searchingFilters($searchPage, $query, ['template' => 'common/search-filters-links']) ?>
+<?= $this->searchingFilters($searchConfig, $query, ['template' => 'common/search-filters-links']) ?>
 <?php endif; ?>
 
 <?php if (isset($displayParts['paginator'])): ?>
@@ -57,11 +57,11 @@ if (isset($displayParts['per_pages']) && $perPages = $searchPage->subSetting('pa
 </div>
 <?php endif; ?>
 
-<!-- <?php if (isset($displayParts['sort']) && $sortFields = $searchPage->subSetting('sort', 'fields')): ?>
+<!-- <?php if (isset($displayParts['sort']) && $sortFields = $searchConfig->subSetting('sort', 'fields')): ?>
 <?= $this->searchSortSelector($query, $sortFields) ?>
 <?php endif; ?> -->
 
-<?php if (isset($displayParts['grid_list']) && ($gridListMode = $searchPage->subSetting('display', 'grid_list_mode', 'auto')) && !in_array($gridListMode, ['list_only', 'grid_only'])): ?>
+<?php if (isset($displayParts['grid_list']) && ($gridListMode = $searchConfig->subSetting('display', 'grid_list_mode', 'auto')) && !in_array($gridListMode, ['list_only', 'grid_only'])): ?>
 <div class="search-results-display">
     <a class="search-view-type search-view-type-list<?= $gridListMode === 'list' ? ' active' : '' ?>" href="#"><?= $translate('list') ?></a>
     |

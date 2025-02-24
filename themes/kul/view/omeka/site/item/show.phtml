@@ -61,10 +61,10 @@ $second = $this->resourcePageBlocks($item, 'second')->hasBlocks();
 <?php endif; ?>
 <?php if($main && $right && !$left): ?>
   <div class="row">
-    <div class="main-content col-md-8">
+    <div class="main-content col-md-6">
       <?php echo $this->resourcePageBlocks($item, 'main')->getBlocks(); ?>
     </div>
-    <div class="right-content col-md-4">
+    <div class="right-content col-md-6">
       <?php echo $this->resourcePageBlocks($item, 'right')->getBlocks(); ?>
     </div>
   </div>

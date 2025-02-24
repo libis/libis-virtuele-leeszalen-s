@@ -29,10 +29,5 @@ return [
             'Omeka\File\Store' => 'Omeka\File\Store\Local',
             'Omeka\File\Thumbnailer' => 'Omeka\File\Thumbnailer\ImageMagick'
         ],
-    ],
-    'file_store' => [
-        'local' => [
-             'base_uri' => 'https://services3.libis.be/virtuele-leeszalen/files'
-        ]
-    ],
+    ]
 ];

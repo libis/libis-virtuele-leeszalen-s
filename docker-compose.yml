@@ -4,7 +4,6 @@ services:
     networks:
      - my-network
     ports:
-    ports:
       - "9003:80"   
     volumes:
       - ./modules/:/var/www/html/virtuele-leeszalen/modules/

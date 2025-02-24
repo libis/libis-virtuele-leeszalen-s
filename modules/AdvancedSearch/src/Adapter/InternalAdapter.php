@@ -4,25 +4,13 @@ namespace AdvancedSearch\Adapter;
 
 class InternalAdapter extends AbstractAdapter
 {
-    public function getLabel(): string
-    {
-        return 'Internal [sql]'; // @translate
-    }
+    protected $label = 'Internal [sql]'; // @translate
 
-    public function getConfigFieldset(): ?\Laminas\Form\Fieldset
-    {
-        return new \AdvancedSearch\Form\Admin\InternalConfigFieldset;
-    }
+    protected $configFieldsetClass = \AdvancedSearch\Form\Admin\InternalConfigFieldset::class;
 
-    public function getIndexerClass(): string
-    {
-        return \AdvancedSearch\Indexer\InternalIndexer::class;
-    }
+    protected $indexerClass = \AdvancedSearch\Indexer\InternalIndexer::class;
 
-    public function getQuerierClass(): string
-    {
-        return \AdvancedSearch\Querier\InternalQuerier::class;
-    }
+    protected $querierClass = \AdvancedSearch\Querier\InternalQuerier::class;
 
     public function getAvailableFields(): array
     {
@@ -233,12 +221,26 @@ class InternalAdapter extends AbstractAdapter
                 'from' => 'item_set/o:id',
                 'to' => 'item_set_id',
             ],
+            // Module Access.
+            'access' => [
+                'name' => 'access',
+                'label' => 'Access',
+                'from' => 'access',
+                'to' => 'access',
+            ],
             // Module Item Sets Tree.
             'item_sets_tree' => [
                 'name' => 'item_sets_tree',
                 'label' => 'Item sets tree',
                 'from' => 'item_sets_tree',
                 'to' => 'item_sets_tree',
+            ],
+            // Module Thesaurus.
+            'thesaurus' => [
+                'name' => 'thesaurus',
+                'label' => 'Thesaurus',
+                'from' => 'item/o:id',
+                'to' => 'thesaurus',
             ],
         ];
     }

@@ -2,7 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016-2017
- * Copyright Daniel Berthereau 2017-2023
+ * Copyright Daniel Berthereau 2017-2024
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -30,12 +30,12 @@
 
 namespace AdvancedSearch\Form\Admin;
 
-use AdvancedSearch\Form\Element\OptionalRadio;
 use AdvancedSearch\FormAdapter\Manager as SearchFormAdapterManager;
+use Common\Form\Element as CommonElement;
 use Laminas\Form\Element;
 use Laminas\Form\Form;
 use Omeka\Api\Manager as ApiManager;
-use Omeka\Form\Element\SiteSelect;
+use Omeka\Form\Element as OmekaElement;
 
 class SearchConfigForm extends Form
 {
@@ -52,6 +52,7 @@ class SearchConfigForm extends Form
     public function init(): void
     {
         $this
+            ->setAttribute('id', 'form-search-config-edit')
             ->add([
                 'name' => 'o:name',
                 'type' => Element\Text::class,
@@ -107,7 +108,7 @@ class SearchConfigForm extends Form
 
             ->add([
                 'name' => 'manage_config_default',
-                'type' => SiteSelect::class,
+                'type' => OmekaElement\SiteSelect::class,
                 'options' => [
                     'label' => 'Set as default search page for sites', // @translate
                     'empty_option' => '[No change]', // @translate
@@ -126,7 +127,7 @@ class SearchConfigForm extends Form
             ])
             ->add([
                 'name' => 'manage_config_availability',
-                'type' => OptionalRadio::class,
+                'type' => CommonElement\OptionalRadio::class,
                 'options' => [
                     'label' => 'Availability on sites', // @translate
                     'info' => 'The admin settings are not modified.', // @translate

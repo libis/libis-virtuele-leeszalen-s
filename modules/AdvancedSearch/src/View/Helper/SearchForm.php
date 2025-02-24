@@ -81,8 +81,10 @@ class SearchForm extends AbstractHelper
      * @param array $options
      * - template (string): Specific partial for the search form.
      * - skip_form_action (bool): Don't set form action, so use the current page.
+     * - skip_partial_headers (bool): Skip partial headers.
+     * Other options are passed to the partial.
      */
-    protected function initSearchForm(SearchConfigRepresentation $searchConfig = null, array $options): void
+    protected function initSearchForm(?SearchConfigRepresentation $searchConfig = null, array $options = []): void
     {
         $this->form = null;
         $this->partialHeaders = null;
@@ -97,7 +99,7 @@ class SearchForm extends AbstractHelper
             // If it is on a search page route, use the id.
             // TODO It may be possible to use the search config path.
             $params = $plugins->get('params')->fromRoute();
-            $searchConfigId = $params['controller'] === 'AdvancedSearch\Controller\IndexController'
+            $searchConfigId = $params['controller'] === \AdvancedSearch\Controller\SearchController::class
                 ? (int) $params['id']
                 : null;
             $this->searchConfig = $getSearchConfig($searchConfigId);
@@ -114,7 +116,7 @@ class SearchForm extends AbstractHelper
             return;
         }
 
-        $this->form = $formAdapter->getForm();
+        $this->form = $formAdapter->getForm($this->options);
         if (!$this->form) {
             return;
         }

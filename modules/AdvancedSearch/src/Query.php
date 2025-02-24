@@ -2,7 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016
- * Copyright Daniel Berthereau, 2018-2023
+ * Copyright Daniel Berthereau, 2018-2024
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software. You can use, modify and/ or
@@ -50,11 +50,9 @@ class Query implements \JsonSerializable
     protected $isPublic = true;
 
     /**
-     * @var string "free", "reserved" or "forbidden".
-     *
-     * @see \AccessResource\Module
+     * @deprecated Will be removed in a future version.
      */
-    protected $accessStatus = 'free';
+    protected $recordOrFullText = 'all';
 
     /**
      * @var array
@@ -206,15 +204,21 @@ class Query implements \JsonSerializable
         return $this->isPublic;
     }
 
-    public function setAccessStatus($accessStatus): self
+    /**
+     * @deprecated Will be removed in a future version.
+     */
+    public function setRecordOrFullText(?string $recordOrFullText): self
     {
-        $this->accessStatus = (string) $accessStatus;
+        $this->recordOrFullText = $recordOrFullText === 'record' ? 'record' : 'all';
         return $this;
     }
 
-    public function getAccessStatus(): string
+    /**
+     * @deprecated Will be removed in a future version.
+     */
+    public function getRecordOrFullText(): string
     {
-        return $this->accessStatus;
+        return $this->recordOrFullText;
     }
 
     /**

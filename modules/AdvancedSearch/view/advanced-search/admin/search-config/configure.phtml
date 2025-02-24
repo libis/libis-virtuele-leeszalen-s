@@ -1,7 +1,7 @@
 <?php
 /*
  * Copyright BibLibre, 2016-2017
- * Copyright Daniel Berthereau, 2017-2023
+ * Copyright Daniel Berthereau, 2017-2024
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -55,7 +55,11 @@ $form->prepare();
 <?= $this->pageTitle(sprintf($translate('Search page "%1$s" (%2$s)'), $searchConfig->name(), $searchConfig->path())) ?>
 
 <div id="page-actions">
-    <button form="search-form-configure"><?= $translate('Save page') ?></button>
+    <button form="form-search-config-configure"><?= $translate('Save') ?></button>
 </div>
+
+<nav class="section-nav">
+    <?= $this->navigation('Laminas\Navigation\AdvancedSearch\Config')->menu() ?>
+</nav>
 
 <?= $this->form($form) ?>

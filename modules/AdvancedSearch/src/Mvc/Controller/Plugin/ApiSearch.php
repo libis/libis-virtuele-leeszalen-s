@@ -192,7 +192,12 @@ class ApiSearch extends AbstractPlugin
             ));
         }
 
+        // TODO Remove all the api bypass feature and use the Omeka query format directly in search engines (this is useless for sql).
+        // It is not possible to initialize a search query for properties,
+        // because they are removed lately in "api.search.pre" and re-added
+        // early in "api.search.query". So an option is added to skip it.
         if ($request->getOption('initialize', true)) {
+            $request->setOption('is_index_search', true);
             $this->api->initialize($adapter, $request);
         }
 
@@ -231,7 +236,7 @@ class ApiSearch extends AbstractPlugin
      *
      * @see \Omeka\Api\Adapter\AbstractResourceEntityAdapter
      * @see \Omeka\Api\Adapter\AbstractEntityAdapter
-     * @see \AdvancedSearch\Controller\IndexController::searchAction()
+     * @see \AdvancedSearch\Controller\SearchController::searchAction()
      *
      * @param Request $request
      * @return Response
@@ -240,7 +245,7 @@ class ApiSearch extends AbstractPlugin
     {
         // TODO Manage all standard params.
         // See \Omeka\Api\Adapter\AbstractEntityAdapter::search() to normalize params.
-        // See \AdvancedSearch\Controller\IndexController::searchAction() for process.
+        // See \AdvancedSearch\Controller\SearchController::searchAction() for process.
         // Currently, only manage simple search and common params.
         // This corresponds to the search page form, but for the api.
         $query = $request->getContent();

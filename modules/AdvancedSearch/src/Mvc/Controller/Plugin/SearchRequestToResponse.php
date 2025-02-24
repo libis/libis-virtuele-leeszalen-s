@@ -5,10 +5,10 @@ namespace AdvancedSearch\Mvc\Controller\Plugin;
 use AdvancedSearch\Api\Representation\SearchConfigRepresentation;
 use AdvancedSearch\Api\Representation\SearchEngineRepresentation;
 use AdvancedSearch\Querier\Exception\QuerierException;
+use Common\Stdlib\PsrMessage;
 use Laminas\EventManager\Event;
 use Laminas\Mvc\Controller\Plugin\AbstractPlugin;
 use Omeka\Api\Representation\SiteRepresentation;
-use Omeka\Stdlib\Message;
 use Omeka\Stdlib\Paginator;
 
 /**
@@ -43,31 +43,36 @@ class SearchRequestToResponse extends AbstractPlugin
         // The controller may not be available.
         $services = $searchConfig->getServiceLocator();
         $plugins = $services->get('ControllerPluginManager');
+        $logger = $services->get('Omeka\Logger');
+        $translator = $services->get('MvcTranslator');
 
         $formAdapterName = $searchConfig->formAdapterName();
         if (!$formAdapterName) {
-            $message = new Message('This search config has no form adapter.'); // @translate
-            $plugins->get('logger')()->err($message);
+            $message = new PsrMessage('This search config has no form adapter.'); // @translate
+            $logger->err($message->getMessage());
             return [
                 'status' => 'error',
-                'message' => $message,
+                'message' => $message->setTranslator($translator),
             ];
         }
 
         /** @var \AdvancedSearch\FormAdapter\FormAdapterInterface $formAdapter */
         $formAdapter = $searchConfig->formAdapter();
         if (!$formAdapter) {
-            $message = new Message('Form adapter "%s" not found.', $formAdapterName); // @translate
-            $plugins->get('logger')()->err($message);
+            $message = new PsrMessage(
+                'Form adapter "{name}" not found.', // @translate
+                ['name' => $formAdapterName]
+            );
+            $logger->err($message->getMessage(), $message->getContext());
             return [
                 'status' => 'error',
-                'message' => $message,
+                'message' => $message->setTranslator($translator),
             ];
         }
 
         $searchConfigSettings = $searchConfig->settings();
 
-        list($request, $isEmptyRequest) = $this->cleanRequest($request);
+        [$request, $isEmptyRequest] = $this->cleanRequest($request);
         if ($isEmptyRequest) {
             // Keep the other arguments of the request (mainly pagination, sort,
             // and facets).
@@ -138,13 +143,12 @@ class SearchRequestToResponse extends AbstractPlugin
 
         $engineSettings = $this->searchEngine->settings();
 
-        // Manage rights of resources to search: visibility public/private and
-        // access (free/reserved/forbidden).
-        // The ser status can be stored even without the module AccessResource.
+        // Manage rights of resources to search: visibility public/private.
 
-        // TODO Manage roles from modules and visibility from modules (access resources).
         // TODO Researcher and author may not access all private resources.
-        // TODO Manage other modes of access than global (by ip or individual).
+        // TODO Manage roles from modules and access level from module Access.
+
+        // For module Access, this is a standard filter.
 
         $user = $plugins->get('identity')();
         $omekaRoles = [
@@ -160,11 +164,9 @@ class SearchRequestToResponse extends AbstractPlugin
         $accessToAdmin = $user && in_array($userRole, $omekaRoles);
         if ($accessToAdmin) {
             $query->setIsPublic(false);
-            $query->setAccessStatus('forbidden');
-        }
-
-        if ($user && !in_array($userRole, $omekaRoles)) {
-            $query->setAccessStatus('reserved');
+            // } elseif ($user && !in_array($userRole, $omekaRoles)) {
+            // This is the default.
+            // $query->setIsPublic(true);
         }
 
         if ($site) {
@@ -174,7 +176,7 @@ class SearchRequestToResponse extends AbstractPlugin
         // Check resources.
         $resourceTypes = $query->getResources();
         // TODO Check why resources may not be filled.
-        $engineSettings['resources'] = $engineSettings['resources'] ?? ['items'];
+        $engineSettings['resources'] ??= ['items'];
         if ($resourceTypes) {
             $resourceTypes = array_intersect($resourceTypes, $engineSettings['resources']) ?: $engineSettings['resources'];
             $query->setResources($resourceTypes);
@@ -245,11 +247,14 @@ class SearchRequestToResponse extends AbstractPlugin
         try {
             $response = $querier->query();
         } catch (QuerierException $e) {
-            $message = new Message("Query error: %s\nQuery: %s", $e->getMessage(), json_encode($query->jsonSerialize(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)); // @translate
-            $plugins->get('logger')()->err($message);
+            $message = new PsrMessage(
+                "Query error: {message}\nQuery: {json_query}", // @translate
+                ['message' => $e->getMessage(), 'json_query' => json_encode($query->jsonSerialize(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)]
+            );
+            $logger->err($message->getMessage(), $message->getContext());
             return [
                 'status' => 'error',
-                'message' => $message,
+                'message' => $message->setTranslator($translator),
             ];
         }
 

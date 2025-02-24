@@ -167,7 +167,7 @@ class SearchingFilters extends AbstractHelper
                     $filters[$filterLabel][$this->urlQuery($key)] = $value;
                     break;
 
-                    // Resource type is "items", "item_sets", etc.
+                // Resource type is "items", "item_sets", etc.
                 case 'resource_type':
                     $resourceTypes = [
                         'items' => $translate('Items'),
@@ -179,9 +179,9 @@ class SearchingFilters extends AbstractHelper
                     }
                     break;
 
-                    // Resource id.
+                // Resource id.
                 case 'id':
-                    $filterLabel = $translate('Resource id'); // @translate
+                    $filterLabel = $translate('ID'); // @translate
                     foreach (array_filter(array_map('intval', $flatArray($value))) as $subKey => $subValue) {
                         $filters[$filterLabel][$this->urlQuery($key, $subKey)] = $subValue;
                     }
@@ -381,6 +381,30 @@ class SearchingFilters extends AbstractHelper
                     }
                     break;
 
+                case 'thesaurus':
+                    /** @var \Common\Stdlib\EasyMeta $easyMeta */
+                    $easyMeta = $plugins->get('easyMeta')();
+                    $is = $translate('is'); // @translate
+                    foreach ($query['thesaurus'] as $term => $itemIds) {
+                        if (!$itemIds) {
+                            continue;
+                        }
+                        $propertyLabel = $easyMeta->propertyLabel($term);
+                        if (!$propertyLabel) {
+                            continue;
+                        }
+                        $filterLabel = $propertyLabel . ' ' . $is;
+                        $itemTitles = $api->search('items', ['id' => $itemIds, 'return_scalar' => 'title'])->getContent();
+                        if ($itemTitles) {
+                            foreach ($itemTitles as $itemId => $itemTitle) {
+                                $filters[$filterLabel][$this->urlQuery($key, $itemId)] = $itemTitle;
+                            }
+                        } else {
+                            $filters[$filterLabel][$this->urlQuery($key)] = '–';
+                        }
+                    }
+                    break;
+
                 default:
                     // Append only fields that are not yet processed somewhere
                     // else, included searchFilters helper.
@@ -417,6 +441,10 @@ class SearchingFilters extends AbstractHelper
      * @param string|int $key
      * @param string|int|null $subKey
      * @return string
+     *
+     * Copy:
+     * @see \AdvancedSearch\View\Helper\SearchFilters::urlQuery()
+     * @see \AdvancedSearch\View\Helper\SearchingFilters::urlQuery()
      */
     protected function urlQuery($key, $subKey = null): string
     {

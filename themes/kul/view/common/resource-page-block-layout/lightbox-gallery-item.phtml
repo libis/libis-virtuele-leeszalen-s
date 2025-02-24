@@ -1,7 +1,15 @@
 <?php
 $itemMedia = $resource->media();
-$sortedMedia = $this->sortMedia($itemMedia);
-if (isset($sortedMedia['lightMedia'])):
-    echo $this->lightGalleryOutput($sortedMedia['lightMedia']);
-endif;
-?>
+
+foreach ($itemMedia as $media):
+    if($media->mediaType() == "application/pdf") :
+        $sortedMedia = [];
+        $file = ["media" => $media];
+        array_push($sortedMedia, $file);
+        echo $this->lightGalleryOutput($sortedMedia);
+    else: ?>
+        <div class="media-embeds w-100">
+            <?php echo $media->render(); ?>
+        </div>
+    <?php endif;?>
+<?php endforeach; ?>

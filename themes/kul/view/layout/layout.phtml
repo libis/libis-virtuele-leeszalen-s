@@ -8,6 +8,7 @@ $this->headTitle($siteTitle)->setSeparator(' · ');
 $this->headTitle()->append($this->setting('installation_title', 'Omeka S'));
 $this->headLink()->prependStylesheet($this->assetUrl('css/style.min.css'));
 $this->headLink()->prependStylesheet($this->assetUrl('css/selectize.css'));
+$this->headLink()->prependStylesheet($this->assetUrl('css/style.css'));
 //$this->headLink()->prependStylesheet($this->assetUrl('css/iconfonts.css', 'Omeka'));
 //$this->headLink()->prependStylesheet('//fonts.googleapis.com/css?family=Open+Sans:400,400italic,600,600italic,700italic,700');
 $this->headScript()->prependFile($this->assetUrl('js/default.js'));

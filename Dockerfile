@@ -38,7 +38,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 WORKDIR /var/www/html/  
 
 RUN usermod -u 10000 www-data
-RUN wget --no-verbose "https://github.com/omeka/omeka-s/releases/download/v4.0.1/omeka-s-4.0.1.zip" -O /var/www/omeka-s.zip
+RUN wget --no-verbose "https://github.com/omeka/omeka-s/releases/download/v4.1.1/omeka-s-4.1.1.zip" -O /var/www/omeka-s.zip
 RUN unzip -q /var/www/omeka-s.zip -d /var/www/ \
 &&  rm /var/www/omeka-s.zip \
 &&  rm -rf /var/www/html/virtuele-leeszalen \
@@ -47,7 +47,8 @@ RUN unzip -q /var/www/omeka-s.zip -d /var/www/ \
 
 # Content
 COPY .htaccess /var/www/html/virtuele-leeszalen
-COPY robots.txt /var/www/html/virtuele-leeszalen
+COPY themes /var/www/html/virtuele-leeszalen/themes
+COPY modules /var/www/html/virtuele-leeszalen/modules
 
 # Cron
 #COPY import-cron /etc/cron.d/import-cron

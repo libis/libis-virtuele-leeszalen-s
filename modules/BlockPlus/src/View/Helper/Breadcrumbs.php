@@ -156,7 +156,6 @@ class Breadcrumbs extends AbstractHelper
                 if (!$options['homepage']) {
                     return '';
                 }
-
                 if (!$options['home'] != $options['current']) {
                     $this->crumbHome($site);
                 }
@@ -271,14 +270,13 @@ class Breadcrumbs extends AbstractHelper
                 if ($options['collections']) {
                     $this->crumbCollections($options, $translate, $url, $siteSlug);
                 }
-
                 if ($options['current']) {
                     $action = $routeMatch->getParam('action', 'browse');
                     // In Omeka S, item set show is a redirect to item browse
                     // with a special partial, so normally, there is no "show",
                     // except with specific redirection.
                     /** @var \Omeka\Api\Representation\ItemSetRepresentation $resource */
-                    $resource = $vars->itemSet;
+                    $resource = $vars->itemSet ?? $vars->resource;
                     if ($resource) {
                         $label = (string) $resource->displayTitle();
                     }
@@ -375,14 +373,22 @@ class Breadcrumbs extends AbstractHelper
                     $itemSetId = $routeMatch->getParam('item-set-id', null) ?: $view->params()->fromQuery('collection');
                     if ($itemSetId) {
                         $itemSet = $this->api->searchOne('item_sets', ['id' => $itemSetId])->getContent();
-                        $this->crumbItemSet($itemSet, $site);
+                        // Don't add the item set if it is not search in order
+                        // to avoid to duplicate it when current is set.
+                        if (!$options['current']) {
+                            $this->crumbItemSet($itemSet, $site);
+                        }
                         // Display page?
                     }
                 } elseif ($options['itemsetstree']) {
                     $itemSetId = $routeMatch->getParam('item-set-id', null) ?: $view->params()->fromQuery('collection');
                     if ($itemSetId) {
                         $itemSet = $this->api->searchOne('item_sets', ['id' => $itemSetId])->getContent();
-                        $this->crumbItemSetsTree($itemSet, $site);
+                        // Don't add the item set if it is not search in order
+                        // to avoid to duplicate it when current is set.
+                        if (!$options['current']) {
+                            $this->crumbItemSetsTree($itemSet, $site);
+                        }
                     }
                 }
                 if ($options['current']) {
@@ -774,8 +780,8 @@ class Breadcrumbs extends AbstractHelper
             ? 'item_sets_tree_edge.rank'
             : 'resource.title';
 
-            // TODO Use query builder.
-            $sql = <<<SQL
+        // TODO Use query builder.
+        $sql = <<<SQL
 SELECT
     item_sets_tree_edge.item_set_id,
     item_sets_tree_edge.item_set_id AS "id",
@@ -786,7 +792,7 @@ FROM item_sets_tree_edge
 JOIN resource ON resource.id = item_sets_tree_edge.item_set_id
 WHERE item_sets_tree_edge.item_set_id IN (:ids)
 GROUP BY resource.id
-ORDER BY $sortingMethodSql;
+ORDER BY $sortingMethodSql ASC;
 SQL;
         $flatTree = $connection->executeQuery($sql, ['ids' => array_keys($itemSetTitles)], ['ids' => $connection::PARAM_INT_ARRAY])->fetchAllAssociativeIndexed();
 
@@ -824,13 +830,9 @@ SQL;
 
         // Order by sorting method.
         if ($sortingMethod === 'rank') {
-            $sortingFunction = function ($a, $b) use ($structure) {
-                return $structure[$a]['rank'] - $structure[$b]['rank'];
-            };
+            $sortingFunction = fn ($a, $b) => $structure[$a]['rank'] - $structure[$b]['rank'];
         } else {
-            $sortingFunction = function ($a, $b) use ($structure) {
-                return strcmp($structure[$a]['title'], $structure[$b]['title']);
-            };
+            $sortingFunction = fn ($a, $b) => strcmp($structure[$a]['title'], $structure[$b]['title']);
         }
 
         foreach ($structure as &$node) {

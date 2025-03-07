@@ -10,6 +10,7 @@ services:
       - ./themes/:/var/www/html/virtuele-leeszalen/themes/
       - ./files/:/var/www/html/virtuele-leeszalen/files/
       - ./config/:/var/www/html/virtuele-leeszalen/config/
+      - .htaccess:/var/www/html/virtuele-leeszalen/.htaccess
     restart: "no"
     
 networks:

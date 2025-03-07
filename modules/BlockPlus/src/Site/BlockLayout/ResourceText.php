@@ -8,6 +8,7 @@ use Omeka\Api\Representation\SitePageRepresentation;
 use Omeka\Api\Representation\SiteRepresentation;
 use Omeka\Entity\SitePageBlock;
 use Omeka\Site\BlockLayout\AbstractBlockLayout;
+use Omeka\Site\BlockLayout\TemplateableBlockLayoutInterface;
 use Omeka\Stdlib\ErrorStore;
 use Omeka\Stdlib\HtmlPurifier;
 
@@ -17,7 +18,7 @@ use Omeka\Stdlib\HtmlPurifier;
  * @link https://omeka.org/s/docs/user-manual/sites/site_pages/#media
  * @link https://omeka.org/s/docs/user-manual/sites/site_pages/#html
  */
-class ResourceText extends AbstractBlockLayout
+class ResourceText extends AbstractBlockLayout implements TemplateableBlockLayoutInterface
 {
     use CommonTrait;
 
@@ -70,7 +71,7 @@ class ResourceText extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['blockplus']['block_settings']['resourceText'];
         $blockFieldset = \BlockPlus\Form\ResourceTextFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         $dataForm = [];
         foreach ($data as $key => $value) {
@@ -85,8 +86,6 @@ class ResourceText extends AbstractBlockLayout
         $formRow = $plugins->get('formRow');
         $translate = $plugins->get('translate');
         $html = '';
-        $element = $fieldset->get('o:block[__blockIndex__][o:data][heading]');
-        $html .= $formRow($element);
         $html .= $view->blockAttachmentsForm($block);
         $element = $fieldset->get('o:block[__blockIndex__][o:data][html]');
         $html .= $formRow($element);
@@ -95,7 +94,6 @@ class ResourceText extends AbstractBlockLayout
         $html .= '<style>.collapsible.no-override {overflow:visible;}</style>';
         $optionsElements = [
             'o:block[__blockIndex__][o:data][thumbnail_type]',
-            'o:block[__blockIndex__][o:data][alignment]',
             'o:block[__blockIndex__][o:data][show_title_option]',
             'o:block[__blockIndex__][o:data][caption_position]',
             'o:block[__blockIndex__][o:data][template]',
@@ -108,7 +106,7 @@ class ResourceText extends AbstractBlockLayout
         return $html;
     }
 
-    public function render(PhpRenderer $view, SitePageBlockRepresentation $block)
+    public function render(PhpRenderer $view, SitePageBlockRepresentation $block, $templateViewScript = self::PARTIAL_NAME)
     {
         $attachments = $block->attachments();
         $html = $block->dataValue('html', '');
@@ -118,24 +116,18 @@ class ResourceText extends AbstractBlockLayout
 
         $vars = [
             'block' => $block,
-            'heading' => $block->dataValue('heading', ''),
             'attachments' => $attachments,
             'html' => $html,
-            'alignmentClass' => $block->dataValue('alignment', 'left'),
             'thumbnailType' => $block->dataValue('thumbnail_type', 'square'),
             'showTitleOption' => $block->dataValue('show_title_option', 'item_title'),
             'captionPosition' => $block->dataValue('caption_position', 'center'),
         ];
-        $template = $block->dataValue('template', self::PARTIAL_NAME);
-        return $template !== self::PARTIAL_NAME && $view->resolver($template)
-            ? $view->partial($template, $vars)
-            : $view->partial(self::PARTIAL_NAME, $vars);
+        return $view->partial($templateViewScript, $vars);
     }
 
     public function getFulltextText(PhpRenderer $view, SitePageBlockRepresentation $block)
     {
         // TODO Add captions (they are not added in the core)?
-        return $block->dataValue('heading', '')
-            . ' ' . $block->dataValue('html', '');
+        return $block->dataValue('html', '');
     }
 }

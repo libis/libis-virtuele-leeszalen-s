@@ -10,10 +10,11 @@ use Omeka\Api\Representation\SiteRepresentation;
 use Omeka\Entity\SitePageBlock;
 use Omeka\Mvc\Controller\Plugin\Messenger;
 use Omeka\Site\BlockLayout\AbstractBlockLayout;
+use Omeka\Site\BlockLayout\TemplateableBlockLayoutInterface;
 use Omeka\Stdlib\ErrorStore;
 use Omeka\Stdlib\Message;
 
-class Twitter extends AbstractBlockLayout
+class Twitter extends AbstractBlockLayout implements TemplateableBlockLayoutInterface
 {
     /**
      * The default partial view script.
@@ -23,7 +24,7 @@ class Twitter extends AbstractBlockLayout
     /**
      * The user agent should be allowed by Twitter.
      */
-    const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64; rv:115.0) Gecko/20100101 Firefox/115.0';
+    const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0';
 
     /**
      * The url to get the user id.
@@ -62,7 +63,8 @@ class Twitter extends AbstractBlockLayout
 
     public function onHydrate(SitePageBlock $block, ErrorStore $errorStore): void
     {
-        // TODO Check why direct messenger is used and not plugin, and why error store is not used.
+        // TODO Check why error store is not used.
+        // Service locator is not available, so use new Messenger.
         $messenger = new Messenger;
 
         $data = $block->getData();
@@ -131,7 +133,7 @@ class Twitter extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['blockplus']['block_settings']['twitter'];
         $blockFieldset = \BlockPlus\Form\TwitterFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         $dataForm = [];
         foreach ($data as $key => $value) {
@@ -144,7 +146,7 @@ class Twitter extends AbstractBlockLayout
         return $view->formCollection($fieldset, false);
     }
 
-    public function render(PhpRenderer $view, SitePageBlockRepresentation $block)
+    public function render(PhpRenderer $view, SitePageBlockRepresentation $block, $templateViewScript = self::PARTIAL_NAME)
     {
         $vars = $block->data();
 
@@ -176,14 +178,10 @@ class Twitter extends AbstractBlockLayout
 
         $vars = [
             'block' => $block,
-            'heading' => $vars['heading'],
             'account' => $accountData,
             'messages' => $messages,
         ];
-        $template = $block->dataValue('template', self::PARTIAL_NAME);
-        return $template !== self::PARTIAL_NAME && $view->resolver($template)
-            ? $view->partial($template, $vars)
-            : $view->partial(self::PARTIAL_NAME, $vars);
+        return $view->partial($templateViewScript, $vars);
     }
 
     public function getFulltextText(PhpRenderer $view, SitePageBlockRepresentation $block)
@@ -331,21 +329,21 @@ class Twitter extends AbstractBlockLayout
                     switch ($entityType) {
                         case 'hashtags':
                             $replace['#' . $entity['text']] = sprintf(
-                                '<a href="%s" rel="nofollow noopener" target="_blank">%s</a>',
+                                '<a href="%s" rel="nofollow noopener" target="_blank" rel="noopener">%s</a>',
                                 $baseUrl . 'hashtag/' . rawurlencode($entity['text']),
                                 $escape('#' . $entity['text'])
                             );
                             break;
                         case 'user_mentions':
                             $replace['@' . $entity['screen_name']] = sprintf(
-                                '<a href="%s" rel="nofollow noopener" target="_blank">%s</a>',
+                                '<a href="%s" rel="nofollow noopener" target="_blank" rel="noopener">%s</a>',
                                 $baseUrl . $escape($entity['screen_name']),
                                 $escape('@' . $entity['screen_name'])
                             );
                             break;
                         case 'urls':
                             $replace[$entity['url']] = sprintf(
-                                '<a href="%s" rel="nofollow noopener" target="_blank">%s</a>',
+                                '<a href="%s" rel="nofollow noopener" target="_blank" rel="noopener">%s</a>',
                                 $entity['url'],
                                 $entity['expanded_url']
                             );
@@ -487,21 +485,21 @@ class Twitter extends AbstractBlockLayout
                     switch ($entityType) {
                         case 'hashtags':
                             $replace['#' . $entity['text']] = sprintf(
-                                '<a href="%s" rel="nofollow noopener" target="_blank">%s</a>',
+                                '<a href="%s" rel="nofollow noopener" target="_blank" rel="noopener">%s</a>',
                                 $baseUrl . 'hashtag/' . rawurlencode($entity['text']),
                                 $escape('#' . $entity['text'])
                             );
                             break;
                         case 'user_mentions':
                             $replace['@' . $entity['screen_name']] = sprintf(
-                                '<a href="%s" rel="nofollow noopener" target="_blank">%s</a>',
+                                '<a href="%s" rel="nofollow noopener" target="_blank" rel="noopener">%s</a>',
                                 $baseUrl . $escape($entity['screen_name']),
                                 $escape('@' . $entity['screen_name'])
                             );
                             break;
                         case 'urls':
                             $replace[$entity['url']] = sprintf(
-                                '<a href="%s" rel="nofollow noopener" target="_blank">%s</a>',
+                                '<a href="%s" rel="nofollow noopener" target="_blank" rel="noopener">%s</a>',
                                 $entity['url'],
                                 $entity['expanded_url']
                             );

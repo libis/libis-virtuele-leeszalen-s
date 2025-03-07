@@ -292,3 +292,13 @@ aside.column {
     margin-right: 0;
     vertical-align: top;
 }
+
+/* Breadcrumbs */
+nav.breadcrumbs > ul,
+nav.breadcrumbs > ol {
+    list-style: none;
+}
+nav.breadcrumbs > ul > li,
+nav.breadcrumbs > ol > li {
+    display: inline;
+}

@@ -1,8 +1,6 @@
-'use strict';
-
 /*
  * Copyright BibLibre, 2016
- * Copyright Daniel Berthereau, 2017-2024
+ * Copyright Daniel Berthereau, 2017-2023
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -27,8 +25,6 @@
  * The fact that you are presently reading this means that you have had
  * knowledge of the CeCILL license and that you accept its terms.
  */
-
-const hasChosenSelect = typeof $.fn.chosen === 'function';
 
 var Search = (function() {
     var self = {};
@@ -204,7 +200,7 @@ $(document).ready(function() {
                 && $(this).prop('value') === String(facetValue)
             ) {
                 $(this).prop('selected', false);
-                if (hasChosenSelect) {
+                if ($.isFunction($.fn.chosen)) {
                     $(this).closest('select').trigger('chosen:updated');
                 }
             }
@@ -284,14 +280,55 @@ $(document).ready(function() {
     }
     $('.search-view-type-' + view_type).click();
 
-    if (typeof $.fn.autocomplete === 'function') {
+    if ($.isFunction($.fn.autocomplete)) {
         let searchElement = $('.form-search .autosuggest[name=q]');
         let autosuggestOptions = Search.autosuggestOptions(searchElement);
         if (autosuggestOptions) searchElement.autocomplete(autosuggestOptions);
     }
 
-    if (hasChosenSelect) {
+    if ($.isFunction($.fn.chosen)) {
         $('.chosen-select').chosen(Search.chosenOptions);
     }
+
+    /********
+     * Standard advanced search form.
+     */
+
+    // Disable query text according to some query types without values.
+    // See global.js.
+    function disableQueryTextInput(queryType) {
+        var queryText = queryType.siblings('.query-text');
+        queryText.prop('disabled',
+            ['ex', 'nex', 'exs', 'nexs', 'exm', 'nexm', 'lex', 'nlex', 'tpl', 'ntpl', 'tpr', 'ntpr', 'tpu', 'ntpu'].includes(queryType.val()));
+    };
+    $(document).on('change', '.query-type', function () {
+         disableQueryTextInput($(this));
+    });
+    // Updating querying should be done on load too.
+    $('#property-queries .query-type').each(function() {
+         disableQueryTextInput($(this));
+    });
+
+    /**
+     * Avoid to select "All properties" in the advanced search form by default.
+     * It should be done on load for empty request and on append for new fields.
+     * @see application/asset/js/advanced-search.js.
+     */
+    const propertyValues = $('body.search #advanced-search #property-queries .inputs > .value');
+    if (propertyValues.length === 1) {
+        const searchParams = new URLSearchParams(document.location.search);
+        if ((!searchParams.has('property[0][property]') && !searchParams.has('property[0][property][0]') && !searchParams.has('property[0][property][]'))
+            || (['', 'eq'].includes(searchParams.get('property[0][type]')) && searchParams.get('property[0][text]') === '')
+        ) {
+            const selectProperty = $(propertyValues[0]).find('.query-property');
+            selectProperty.find('option:selected').prop('selected', false);
+            selectProperty.trigger('chosen:updated');
+        }
+    }
+    $(document).on('click', '#property-queries.multi-value .add-value', function(e) {
+        const selectProperty = $(this).closest('#property-queries').find('.inputs > .value:last-child .query-property');
+        selectProperty.find('option:selected').prop('selected', false);
+        selectProperty.trigger('chosen:updated');
+    });
 
 });

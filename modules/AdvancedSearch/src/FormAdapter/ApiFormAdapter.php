@@ -2,7 +2,6 @@
 
 namespace AdvancedSearch\FormAdapter;
 
-use AdvancedSearch\Api\Representation\SearchConfigRepresentation;
 use AdvancedSearch\Query;
 use Doctrine\DBAL\Connection;
 
@@ -10,8 +9,6 @@ use Doctrine\DBAL\Connection;
  * Simulate an api search.
  *
  * Only main search and properties are managed currently, with the joiner "and".
- *
- * This is not a sub-class of AbstractFormAdapter.
  */
 class ApiFormAdapter implements FormAdapterInterface
 {
@@ -19,15 +16,6 @@ class ApiFormAdapter implements FormAdapterInterface
      * @var Connection
      */
     protected $connection;
-
-    protected $configFormClass = \AdvancedSearch\Form\Admin\ApiFormConfigFieldset::class;
-
-    protected $label = 'Api'; // @translate
-
-    /**
-     * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation
-     */
-    protected $searchConfig;
 
     /**
      * @param Connection $connection
@@ -37,20 +25,19 @@ class ApiFormAdapter implements FormAdapterInterface
         $this->connection = $connection;
     }
 
-    public function setSearchConfig(?SearchConfigRepresentation $searchConfig): FormAdapterInterface
+    public function getLabel(): string
     {
-        $this->searchConfig = $searchConfig;
+        return 'Api'; // @translate
+    }
+
+    public function setForm(?\Laminas\Form\Form $form): \AdvancedSearch\FormAdapter\FormAdapterInterface
+    {
         return $this;
     }
 
-    public function getConfigFormClass(): ?string
+    public function getForm(): ?\Laminas\Form\Form
     {
-        return $this->configFormClass;
-    }
-
-    public function getLabel(): string
-    {
-        return $this->label;
+        return null;
     }
 
     public function getFormClass(): ?string
@@ -68,14 +55,9 @@ class ApiFormAdapter implements FormAdapterInterface
         return null;
     }
 
-    public function getForm(array $options = []): ?\Laminas\Form\Form
+    public function getConfigFormClass(): ?string
     {
-        return null;
-    }
-
-    public function renderForm(array $options = []): string
-    {
-        return '';
+        return \AdvancedSearch\Form\Admin\ApiFormConfigFieldset::class;
     }
 
     public function toQuery(array $request, array $formSettings): \AdvancedSearch\Query

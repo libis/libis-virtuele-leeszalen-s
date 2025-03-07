@@ -8,9 +8,10 @@ use Omeka\Api\Representation\SitePageRepresentation;
 use Omeka\Api\Representation\SiteRepresentation;
 use Omeka\Entity\SitePageBlock;
 use Omeka\Site\BlockLayout\AbstractBlockLayout;
+use Omeka\Site\BlockLayout\TemplateableBlockLayoutInterface;
 use Omeka\Stdlib\ErrorStore;
 
-class SearchResults extends AbstractBlockLayout
+class SearchResults extends AbstractBlockLayout implements TemplateableBlockLayoutInterface
 {
     /**
      * The default partial view script.
@@ -24,7 +25,8 @@ class SearchResults extends AbstractBlockLayout
 
     public function onHydrate(SitePageBlock $block, ErrorStore $errorStore): void
     {
-        $data = $block->getData() + ['query' => []];
+        $data = $block->getData() ?? [];
+
         if (empty($data['query'])) {
             $data['query'] = [];
         } elseif (!is_array($data['query'])) {
@@ -32,6 +34,7 @@ class SearchResults extends AbstractBlockLayout
             parse_str(ltrim($data['query'], "? \t\n\r\0\x0B"), $query);
             $data['query'] = $query;
         }
+
         $block->setData($data);
     }
 
@@ -58,7 +61,7 @@ class SearchResults extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['blockplus']['block_settings']['searchResults'];
         $blockFieldset = \BlockPlus\Form\SearchResultsFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         $data['query'] = http_build_query($data['query'], '', '&', PHP_QUERY_RFC3986);
 
@@ -75,10 +78,8 @@ class SearchResults extends AbstractBlockLayout
         return $view->formCollection($fieldset);
     }
 
-    public function render(PhpRenderer $view, SitePageBlockRepresentation $block)
+    public function render(PhpRenderer $view, SitePageBlockRepresentation $block, $templateViewScript = self::PARTIAL_NAME)
     {
-        // Similar to BrowsePreview::render(), but with a different query.
-
         $resourceType = $block->dataValue('resource_type', 'items');
 
         $defaultQuery = $block->dataValue('query', []) + ['search' => ''];
@@ -117,6 +118,11 @@ class SearchResults extends AbstractBlockLayout
         } elseif (!isset($query['sort_order'])) {
             $query['sort_order'] = 'desc';
         }
+
+        // Show all resource components if none set.
+        $components = empty($data['components'])
+            ? ['resource-heading', 'resource-body', 'thumbnail']
+            : $data['components'];
 
         /** @var \Omeka\Api\Response $response */
         $api = $view->api();
@@ -179,18 +185,20 @@ class SearchResults extends AbstractBlockLayout
             'media' => 'media',
         ];
 
+        // There is no list of media in public views.
+        $linkText = $resourceType === 'media' ? '' : ($data['link-text'] ?? '');
+
         $vars = [
             'block' => $block,
-            'heading' => $block->dataValue('heading'),
-            'resourceType' => $resourceTypes[$resourceType],
+            'site' => $site,
             'resources' => $resources,
+            'resourceType' => $resourceTypes[$resourceType] ?? $resourceType,
             'query' => $query,
             'pagination' => $showPagination,
             'sortHeadings' => $sortHeadings,
+            'components' => $components,
+            'linkText' => $linkText,
         ];
-        $template = $block->dataValue('template', self::PARTIAL_NAME);
-        return $template !== self::PARTIAL_NAME && $view->resolver($template)
-            ? $view->partial($template, $vars)
-            : $view->partial(self::PARTIAL_NAME, $vars);
+        return $view->partial($templateViewScript, $vars);
     }
 }

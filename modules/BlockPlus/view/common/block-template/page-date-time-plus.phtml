@@ -1,0 +1,39 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\SitePageBlockRepresentation $block
+ * @var string $display
+ * @var string $dateFormat
+ * @var string $timeFormat
+ */
+
+$plugins = $this->getHelperPluginManager();
+$escape = $plugins->get('escapeHtml');
+$translate = $plugins->get('translate');
+
+$display ??= $block->dataValue('display', 'created_modified');
+$dateFormat ??= $block->dataValue('date_format', 'medium');
+$timeFormat ??= $block->dataValue('time_format', 'none');
+
+$page = $block->page();
+if ($display === 'created') {
+    $first = $page->created();
+    $second = null;
+} elseif ($display === 'modified') {
+    $first = $page->modified() ?: $page->created();
+    $second = null;
+} else {
+    $first = $page->created();
+    $second = $page->modified();
+}
+
+$first = $this->i18n()->dateFormat($first, $dateFormat, $timeFormat);
+$second = $this->i18n()->dateFormat($second, $dateFormat, $timeFormat);
+if ($first === $second) $second = null;
+?>
+
+<?php if ($second): ?>
+    <?= sprintf($translate('Created on %s, updated on %s'), $first, $second) // @translate ?>
+<?php else: ?>
+    <?= sprintf($translate('Created on %s'), $first) // @translate ?>
+<?php endif; ?>

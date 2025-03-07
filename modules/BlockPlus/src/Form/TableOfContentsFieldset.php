@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
+
 namespace BlockPlus\Form;
 
-use BlockPlus\Form\Element\TemplateSelect;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
 
@@ -10,13 +10,6 @@ class TableOfContentsFieldset extends Fieldset
     public function init(): void
     {
         $this
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][heading]',
-                'type' => Element\Text::class,
-                'options' => [
-                    'label' => 'Block title', // @translate
-                ],
-            ])
             ->add([
                 'name' => 'o:block[__blockIndex__][o:data][depth]',
                 'type' => Element\Number::class,
@@ -36,17 +29,6 @@ class TableOfContentsFieldset extends Fieldset
                     'info' => 'If set, all the pages will be displayed, else only the ones from the current page.', // @translate
                 ],
             ])
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][template]',
-                'type' => TemplateSelect::class,
-                'options' => [
-                    'label' => 'Template to display', // @translate
-                    'info' => 'Templates are in folder "common/block-layout" of the theme and should start with "table-of-contents".', // @translate
-                    'template' => 'common/block-layout/table-of-contents',
-                ],
-                'attributes' => [
-                    'class' => 'chosen-select',
-                ],
-            ]);
+        ;
     }
 }

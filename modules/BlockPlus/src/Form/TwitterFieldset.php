@@ -2,7 +2,6 @@
 
 namespace BlockPlus\Form;
 
-use BlockPlus\Form\Element\TemplateSelect;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
 
@@ -11,16 +10,6 @@ class TwitterFieldset extends Fieldset
     public function init(): void
     {
         $this
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][heading]',
-                'type' => Element\Text::class,
-                'options' => [
-                    'label' => 'Block title', // @translate
-                ],
-                'attributes' => [
-                    'id' => 'twitter-heading',
-                ],
-            ])
             ->add([
                 'name' => 'o:block[__blockIndex__][o:data][account]',
                 'type' => Element\Text::class,
@@ -81,18 +70,6 @@ class TwitterFieldset extends Fieldset
                     'id' => 'twitter-retweet',
                 ],
             ])
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][template]',
-                'type' => TemplateSelect::class,
-                'options' => [
-                    'label' => 'Template to display', // @translate
-                    'info' => 'Templates are in folder "common/block-layout" of the theme and should start with "twitter".', // @translate
-                    'template' => 'common/block-layout/twitter',
-                ],
-                'attributes' => [
-                    'id' => 'twitter-template',
-                    'class' => 'chosen-select',
-                ],
-            ]);
+        ;
     }
 }

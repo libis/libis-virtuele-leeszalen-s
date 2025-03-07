@@ -10,10 +10,15 @@
  * @deprecated $crumbs is kept for old themes, not in this partial (see old releases).
  * @var array $crumbs Flat list of crumb, that is an array with "label", "uri", "resource", if any.
  *
- * $nav is currently not available when called from view helper breadcrumbs.
+ * $nav is currently not available when called from the view helper breadcrumbs.
  */
 
-// Quick hack to insert a span for the last part instead nothing (simpler to theme and simpler than creating a specific partial).
+// Quick hack to insert a span for the last part instead of no tag.
+// This span allows a simpler theming and avoit to create a specific partial.
+// Furthermore, the nav is wrapped in a main div to simplify global positionning.
+
+$plugins = $this->getHelperPluginManager();
+$translate = $plugins->get('translate');
 
 // The separator should be a string, else the default one (" &gt; ") is used.
 $separator = ' ' . $options['separator'] . " \n";
@@ -21,10 +26,12 @@ $html = empty($nav)
     ? $this->navigation()->breadcrumbs($breadcrumbs)->setSeparator($separator)
     : $nav->breadcrumbs()->setSeparator($separator);
 if (empty($options['linkLast']) && $lastLinkPos = mb_strrpos($html, '</a>' . $separator)):
-    $html = mb_substr($html, 0, $lastLinkPos + 4 + mb_strlen($separator)) . '<span class="active">' . mb_substr($html, $lastLinkPos + 4 + mb_strlen($separator)) . '</span>';
+    $html = mb_substr($html, 0, $lastLinkPos + 4 + mb_strlen($separator)) . '<span class="active" aria-currrent="page">' . mb_substr($html, $lastLinkPos + 4 + mb_strlen($separator)) . '</span>';
 endif;
 ?>
 
-<nav id="breadcrumb" class="breadcrumbs">
-    <?= $html ?>
-</nav>
+<div class="breadcrumbs-parent">
+    <nav id="breadcrumb" class="breadcrumbs" aria-label="<?= $translate('Breadcrumb') ?>">
+        <?= $html ?>
+    </nav>
+</div>

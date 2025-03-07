@@ -1,26 +1,16 @@
 <?php declare(strict_types=1);
+
 namespace BlockPlus\Form;
 
-use BlockPlus\Form\Element\TemplateSelect;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
-use Omeka\Form\Element\PropertySelect;
+use Omeka\Form\Element as OmekaElement;
 
 class TreeStructureFieldset extends Fieldset
 {
     public function init(): void
     {
         $this
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][heading]',
-                'type' => Element\Text::class,
-                'options' => [
-                    'label' => 'Block title', // @translate
-                ],
-                'attributes' => [
-                    'id' => 'tree-structure-heading',
-                ],
-            ])
             ->add([
                 'name' => 'o:block[__blockIndex__][o:data][root]',
                 'type' => Element\Number::class,
@@ -36,7 +26,7 @@ class TreeStructureFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'o:block[__blockIndex__][o:data][term]',
-                'type' => PropertySelect::class,
+                'type' => OmekaElement\PropertySelect::class,
                 'options' => [
                     'label' => 'Property for structure', // @translate
                     'info' => 'Generally, it is "dcterms:hasPart".', // @translate
@@ -60,19 +50,6 @@ class TreeStructureFieldset extends Fieldset
                 ],
                 'attributes' => [
                     'id' => 'tree-structure-expanded',
-                ],
-            ])
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][template]',
-                'type' => TemplateSelect::class,
-                'options' => [
-                    'label' => 'Template to display', // @translate
-                    'info' => 'Templates are in folder "common/block-layout" of the theme and should start with "tree-structure".', // @translate
-                    'template' => 'common/block-layout/tree-structure',
-                ],
-                'attributes' => [
-                    'id' => 'tree-structure-template',
-                    'class' => 'chosen-select',
                 ],
             ])
         ;

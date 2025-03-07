@@ -10,10 +10,11 @@ use Omeka\Api\Representation\SitePageRepresentation;
 use Omeka\Api\Representation\SiteRepresentation;
 use Omeka\Entity\SitePageBlock;
 use Omeka\Site\BlockLayout\AbstractBlockLayout;
+use Omeka\Site\BlockLayout\TemplateableBlockLayoutInterface;
 use Omeka\Stdlib\ErrorStore;
 use Omeka\Stdlib\HtmlPurifier;
 
-class Showcase extends AbstractBlockLayout
+class Showcase extends AbstractBlockLayout implements TemplateableBlockLayoutInterface
 {
     use CommonTrait;
 
@@ -78,7 +79,7 @@ class Showcase extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['blockplus']['block_settings']['showcase'];
         $blockFieldset = \BlockPlus\Form\ShowcaseFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         foreach ($data['entries'] as &$entry) {
             $entry = $entry['entry'] ?? '';
@@ -96,24 +97,24 @@ class Showcase extends AbstractBlockLayout
         return $view->formCollection($fieldset, false);
     }
 
-    public function render(PhpRenderer $view, SitePageBlockRepresentation $block)
+    public function render(PhpRenderer $view, SitePageBlockRepresentation $block, $templateViewScript = self::PARTIAL_NAME)
     {
         // TODO Include attachments.
         $site = $block->page()->site();
         $vars = [
-            'site' => $site,
             'block' => $block,
-            'heading' => $block->dataValue('heading', ''),
+            'site' => $site,
             'html' => $block->dataValue('html', ''),
             'entries' => $this->listEntryResources($block->dataValue('entries', []) ?? [], $site),
             'thumbnailType' => $block->dataValue('thumbnail_type', 'square'),
             'showTitleOption' => $block->dataValue('show_title_option', 'item_title'),
-            'divclass' => $block->dataValue('divclass', ''),
         ];
-        $template = $block->dataValue('template', self::PARTIAL_NAME);
-        return $template !== self::PARTIAL_NAME && $view->resolver($template)
-            ? $view->partial($template, $vars)
-            : $view->partial(self::PARTIAL_NAME, $vars);
+        return $view->partial($templateViewScript, $vars);
+    }
+
+    public function getFulltextText(PhpRenderer $view, SitePageBlockRepresentation $block)
+    {
+        return strip_tags((string) $this->render($view, $block));
     }
 
     /**
@@ -165,6 +166,9 @@ class Showcase extends AbstractBlockLayout
                     'caption' => $caption,
                     'body' => $body,
                 ];
+                if (($asset . $title . $caption . $body) === '' && strpos(trim($entry), ' ')) {
+                    [$normEntry['data']['url'], $normEntry['data']['title']] = explode(' ', $entry, 2);
+                }
                 $result[] = $normEntry;
                 continue;
             }

@@ -3,6 +3,19 @@
 namespace BlockPlus;
 
 return [
+    'service_manager' => [
+        'invokables' => [
+            Mvc\MvcListeners::class => Mvc\MvcListeners::class,
+        ],
+        'factories' => [
+            // Override theme factory to inject module pages and block templates.
+            // Copied in BlockPlus, Timeline.
+            'Omeka\Site\ThemeManager' => Service\ThemeManagerFactory::class,
+        ],
+    ],
+    'listeners' => [
+        Mvc\MvcListeners::class,
+    ],
     'view_manager' => [
         'template_path_stack' => [
             dirname(__DIR__) . '/view',
@@ -13,92 +26,69 @@ return [
             'assetElement' => View\Helper\AssetElement::class,
             'blockMetadata' => View\Helper\BlockMetadata::class,
             'breadcrumbs' => View\Helper\Breadcrumbs::class,
+            'captionClassAndUrl' => View\Helper\CaptionClassAndUrl::class,
             'ckEditor' => View\Helper\CkEditor::class,
-            'formNote' => Form\View\Helper\FormNote::class,
-            'isHomePage' => View\Helper\IsHomePage::class,
             'pageMetadata' => View\Helper\PageMetadata::class,
             'pagesMetadata' => View\Helper\PagesMetadata::class,
             'primaryItemSet' => View\Helper\PrimaryItemSet::class,
             'thumbnailUrl' => View\Helper\ThumbnailUrl::class,
         ],
-        'delegators' => [
-            'Laminas\Form\View\Helper\FormElement' => [
-                Service\Delegator\FormElementDelegatorFactory::class,
-            ],
-        ],
     ],
     'block_layouts' => [
         'invokables' => [
             'block' => Site\BlockLayout\Block::class,
-            // Use a delegator instead of a factory in order to inject HtmlPurifier.
-            // 'browsePreview' => Site\BlockLayout\BrowsePreview::class,
+            'breadcrumbs' => Site\BlockLayout\Breadcrumbs::class,
             'buttons' => Site\BlockLayout\Buttons::class,
             'd3Graph' => Site\BlockLayout\D3Graph::class,
-            'division' => Site\BlockLayout\Division::class,
+            'heading' => Site\BlockLayout\Heading::class,
             'itemSetShowcase' => Site\BlockLayout\ItemSetShowcase::class,
-            // Omeka core uses "itemShowCase" instead of "itemShowcase". Won't fix: https://github.com/omeka/omeka-s/pull/1431
-            'itemShowCase' => Site\BlockLayout\ItemShowcase::class,
-            'itemWithMetadata' => Site\BlockLayout\ItemWithMetadata::class,
             'links' => Site\BlockLayout\Links::class,
             'listOfSites' => Site\BlockLayout\ListOfSites::class,
+            'messages' => Site\BlockLayout\Messages::class,
             'pageMetadata' => Site\BlockLayout\PageMetadata::class,
-            'pageDate' => Site\BlockLayout\PageDate::class,
-            'pageTitle' => Site\BlockLayout\PageTitle::class,
             'redirectToUrl' => Site\BlockLayout\RedirectToUrl::class,
             'searchForm' => Site\BlockLayout\SearchForm::class,
             'searchResults' => Site\BlockLayout\SearchResults::class,
-            'separator' => Site\BlockLayout\Separator::class,
             'tableOfContents' => Site\BlockLayout\TableOfContents::class,
             'treeStructure' => Site\BlockLayout\TreeStructure::class,
             'twitter' => Site\BlockLayout\Twitter::class,
         ],
         'factories' => [
-            'asset' => Service\BlockLayout\AssetFactory::class,
             'externalContent' => Service\BlockLayout\ExternalContentFactory::class,
-            'html' => Service\BlockLayout\HtmlFactory::class,
-            'listOfPages' => Service\BlockLayout\ListOfPagesFactory::class,
             'mirrorPage' => Service\BlockLayout\MirrorPageFactory::class,
             'resourceText' => Service\BlockLayout\ResourceTextFactory::class,
             'showcase' => Service\BlockLayout\ShowcaseFactory::class,
         ],
-        'delegators' => [
-            \Omeka\Site\BlockLayout\BrowsePreview::class => [
-                Service\BlockLayout\BrowsePreviewDelegatorFactory::class
-            ],
-        ],
-        'aliases' => [
-            'itemShowcase' => 'itemShowCase',
+    ],
+    'resource_page_block_layouts' => [
+        'invokables' => [
+            'block' => Site\ResourcePageBlockLayout\Block::class,
+            'breadcrumbs' => Site\ResourcePageBlockLayout\Breadcrumbs::class,
+            'buttons' => Site\ResourcePageBlockLayout\Buttons::class,
+            'description' => Site\ResourcePageBlockLayout\Description::class,
+            'mediaPartOfItem' => Site\ResourcePageBlockLayout\MediaPartOfItem::class,
+            'messages' => Site\ResourcePageBlockLayout\Messages::class,
+            'previousNext' => Site\ResourcePageBlockLayout\PreviousNext::class,
+            'resourceType' => Site\ResourcePageBlockLayout\ResourceType::class,
+            'thumbnail' => Site\ResourcePageBlockLayout\Thumbnail::class,
+            'title' => Site\ResourcePageBlockLayout\Title::class,
         ],
     ],
     'form_elements' => [
         'invokables' => [
             Form\Element\BlockShowTitleSelect::class => Form\Element\BlockShowTitleSelect::class,
-            Form\Element\DataTextarea::class => Form\Element\DataTextarea::class,
-            Form\Element\Note::class => Form\Element\Note::class,
-            Form\Element\OptionalMultiCheckbox::class => Form\Element\OptionalMultiCheckbox::class,
-            Form\Element\OptionalRadio::class => Form\Element\OptionalRadio::class,
-            Form\Element\OptionalSelect::class => Form\Element\OptionalSelect::class,
             // Blocks.
-            Form\AssetFieldset::class => Form\AssetFieldset::class,
             Form\BlockFieldset::class => Form\BlockFieldset::class,
-            Form\BrowsePreviewFieldset::class => Form\BrowsePreviewFieldset::class,
             Form\ButtonsFieldset::class => Form\ButtonsFieldset::class,
             Form\D3GraphFieldset::class => Form\D3GraphFieldset::class,
-            Form\DivisionFieldset::class => Form\DivisionFieldset::class,
             Form\ExternalContentFieldset::class => Form\ExternalContentFieldset::class,
-            Form\HtmlFieldset::class => Form\HtmlFieldset::class,
+            Form\HeadingFieldset::class => Form\HeadingFieldset::class,
             Form\ItemSetShowcaseFieldset::class => Form\ItemSetShowcaseFieldset::class,
-            Form\ItemShowcaseFieldset::class => Form\ItemShowcaseFieldset::class,
-            Form\ItemWithMetadataFieldset::class => Form\ItemWithMetadataFieldset::class,
-            Form\ListOfPagesFieldset::class => Form\ListOfPagesFieldset::class,
             Form\ListOfSitesFieldset::class => Form\ListOfSitesFieldset::class,
             Form\MirrorPageFieldset::class => Form\MirrorPageFieldset::class,
-            Form\PageDateFieldset::class => Form\PageDateFieldset::class,
-            Form\PageTitleFieldset::class => Form\PageTitleFieldset::class,
             Form\RedirectToUrlFieldset::class => Form\RedirectToUrlFieldset::class,
             Form\ResourceTextFieldset::class => Form\ResourceTextFieldset::class,
             Form\SearchResultsFieldset::class => Form\SearchResultsFieldset::class,
-            Form\SeparatorFieldset::class => Form\SeparatorFieldset::class,
             Form\ShowcaseFieldset::class => Form\ShowcaseFieldset::class,
             Form\TableOfContentsFieldset::class => Form\TableOfContentsFieldset::class,
             Form\TreeStructureFieldset::class => Form\TreeStructureFieldset::class,
@@ -108,12 +98,58 @@ return [
             Form\SiteSettingsFieldset::class => Form\SiteSettingsFieldset::class,
         ],
         'factories' => [
-            Form\Element\OptionalPropertySelect::class => Service\Form\Element\OptionalPropertySelectFactory::class,
-            Form\Element\SitesPageSelect::class => Service\Form\Element\SitesPageSelectFactory::class,
+            /** @deprecated Since Omeka S v4.1, use core block template mechanism. Will be removed once all modules will be upgraded. */
             Form\Element\TemplateSelect::class => Service\Form\Element\TemplateSelectFactory::class,
-            Form\Element\ThumbnailTypeSelect::class => Service\Form\Element\ThumbnailTypeSelectFactory::class,
             Form\PageMetadataFieldset::class => Service\Form\PageMetadataFieldsetFactory::class,
             Form\SearchFormFieldset::class => Service\Form\SearchFormFieldsetFactory::class,
+        ],
+    ],
+    'page_templates' => [
+    ],
+    'block_templates' => [
+        'asset' => [
+            'asset-class-url' => 'Block Plus: Asset with class and url', // @translate
+            'asset-bootstrap-hero' => 'Block Plus: Bootstrap Hero', // @translate
+            'asset-left-right' => 'Block Plus: Left Right', // @translate
+            'asset-partners' => 'Block Plus: Partners', // @translate
+            'asset-deprecated-plus' => 'Block Plus: Asset (deprecated)', // @translate
+        ],
+        'block' => [
+            'block-arborescence' => 'Block Plus: Arborescence', // @translate
+            'block-glossary' => 'Block Plus: Glossary', // @translate
+        ],
+        'breadcrumbs' => [
+            'breadcrumbs-standard' => 'Block Plus: Omeka breadcrumbs', // @translate
+        ],
+        'browsePreview' => [
+            'browse-preview-carousel' => 'Block Plus: Carousel', // @translate
+            'browse-preview-gallery' => 'Block Plus: Gallery', // @translate
+            'browse-preview-deprecated' => 'Block Plus: Browse preview (deprecated)', // @translate
+        ],
+        'media' => [
+            'media-item-showcase-deprecated' => 'Block Plus: Item showcase (deprecated)', // @translate
+        ],
+        'html' => [
+            'html-glossary' => 'Block Plus: Glossary', // @translate
+            'html-page-header' => 'Block Plus: Page header', // @translate
+        ],
+        'itemWithMetadata' => [
+            'item-with-metadata-deprecated' => 'Block Plus: Item with metadata (deprecated)', // @translate
+        ],
+        'listOfPages' => [
+            'list-of-pages-deprecated' => 'Block Plus: List of pages (deprecated)', // @translate
+        ],
+        'listOfSites' => [
+            'list-of-sites-deprecated' => 'Block Plus: List of sites (deprecated)', // @translate
+        ],
+        'pageDateTime' => [
+            'page-date-time-plus' => 'Block Plus: Page date time', // @translate
+        ],
+        'searchResults' => [
+            'search-results-browse-preview-deprecated' => 'Block Plus: Browse preview (deprecated)', // @translate
+        ],
+        'tableOfContents' => [
+            'table-of-contents-deprecated' => 'Block Plus: Table of contents (deprecated)', // @translate
         ],
     ],
     'translator' => [
@@ -138,12 +174,14 @@ return [
             'blockplus_property_itemset' => '',
         ],
         'site_settings' => [
+            // Page metadata.
             'blockplus_page_types' => [
                 'home' => 'Home', // @translate
                 'exhibit' => 'Exhibit', // @translate
                 'exhibit_page' => 'Exhibit page', // @translate
                 'simple' => 'Simple page', // @translate
             ],
+            // Breadcrumbs.
             'blockplus_breadcrumbs_crumbs' => [
                 'home',
                 'collections',
@@ -155,54 +193,24 @@ return [
             'blockplus_breadcrumbs_collections_url' => '',
             'blockplus_breadcrumbs_separator' => '',
             'blockplus_breadcrumbs_homepage' => false,
+            // Resource blocks.
+            // Buttons.
+            'blockplus_block_buttons' => [],
+            // Previous/Next resources.
+            'blockplus_items_order_for_itemsets' => [],
+            'blockplus_prevnext_items_query' => '',
+            'blockplus_prevnext_item_sets_query' => '',
         ],
         'block_settings' => [
-            // The new source upstream "asset" block stores assets as attachments.
-            'asset' => [
-                'heading' => '',
-                'assets' => [
-                    [
-                        'id' => null,
-                        'page' => null,
-                        'alt_link_title' => '',
-                        'caption' => '',
-                        'url' => '',
-                        'class' => '',
-                    ],
-                ],
-                'className' => '',
-                'alignment' => 'default',
-                'template' => '',
-            ],
             'block' => [
-                'heading' => '',
                 'params' => '',
-                'template' => '',
             ],
-            'browsePreview' => [
-                'heading' => '',
-                'html' => '',
-                'resource_type' => 'items',
-                'query' => '',
-                'limit' => 12,
-                'components' => [
-                    'resource-heading',
-                    'resource-body',
-                    'thumbnail',
-                ],
-                'pagination' => false,
-                'sort_headings' => [],
-                'resource_template' => null,
-                'link-text' => 'Browse all', // @translate
-                'template' => '',
+            'breadcrumbs' => [
             ],
             'buttons' => [
-                'heading' => '',
                 'buttons' => [],
-                'template' => '',
             ],
             'd3Graph' => [
-                'heading' => '',
                 'params' => '{
     "items": {
         "limit": 100
@@ -225,62 +233,31 @@ return [
     }
 }
 ',
-                'template' => '',
-            ],
-            'division' => [
-                'type' => 'start',
-                'tag' => 'div',
-                'class' => 'column',
             ],
             'externalContent' => [
-                'heading' => '',
                 'embeds' => [],
                 'html' => '',
-                'alignment' => 'left',
                 'show_title_option' => 'title',
                 'caption_position' => 'center',
                 'link_text' => 'Know more', // @translate
                 'link_url' => '#',
-                'template' => '',
             ],
-            'html' => [
-                'heading' => '',
-                'html' => '',
-                'divclass' => '',
-                'template' => '',
+            'heading' => [
+                'text' => '',
+                'level' => '',
             ],
+            // TODO Migrate itemSetShowcase to showcase or Media.
             'itemSetShowcase' => [
-                'heading' => '',
                 'item_sets' => [],
                 'thumbnail_type' => 'square',
                 'show_title_option' => 'item_set_title',
-                'template' => '',
-            ],
-            'itemShowcase' => [
-                'attachments' => [],
-                'thumbnail_type' => 'square',
-                'show_title_option' => 'item_title',
-                'heading' => '',
-                'template' => '',
-            ],
-            'itemWithMetadata' => [
-                'attachments' => [],
-                'heading' => '',
-                'template' => '',
             ],
             'links' => [
-                'heading' => '',
                 'links' => [],
-                'template' => '',
             ],
-            // Use block Menu of module Menu is cleaner.
-            'listOfPages' => [
-                'heading' => '',
-                'pagelist' => '',
-                'template' => '',
-            ],
+            // TODO Pull request diff in listOfSites in core or move it to module Internationalisation.
+            // Diff with Omeka S: exclude more than current page.
             'listOfSites' => [
-                'heading' => '',
                 'sort' => 'alpha',
                 'limit' => null,
                 // The standard block uses exclude_current only.
@@ -293,13 +270,12 @@ return [
                 'pagination' => false,
                 'summaries' => true,
                 'thumbnails' => true,
-                'template' => '',
+            ],
+            'messages' => [
             ],
             'mirrorPage' => [
                 'page' => null,
             ],
-            // Media embed is not available in BlockPlus.
-            // 'media' => [],
             'pageMetadata' => [
                 'type' => '',
                 'credits' => '',
@@ -310,81 +286,54 @@ return [
                 'params' => '',
                 'attachments' => [],
             ],
-            'pageDate' => [
-                'heading' => '',
-                'dates' => 'created_and_modified',
-                'format_date' => 'medium',
-                'format_time' => 'none',
-                'template' => '',
-            ],
-            'pageTitle' => [
-                'template' => '',
-            ],
             'redirectToUrl' => [
                 'url' => '',
             ],
             'resourceText' => [
-                'heading' => '',
                 'attachments' => [],
                 'html' => '',
                 'thumbnail_type' => 'square',
-                'alignment' => 'left',
                 'show_title_option' => 'item_title',
                 // This option is mainly for compability with Omeka Classic exhibits.
                 'caption_position' => 'center',
-                'template' => '',
             ],
             'searchForm' => [
-                'heading' => '',
                 'html' => '',
                 'link' => '',
                 'search_config' => null,
                 'selector' => '',
-                'template' => '',
             ],
             'searchResults' => [
-                'heading' => '',
                 'resource_type' => 'items',
                 'query' => [],
                 'limit' => 12,
                 'pagination' => true,
                 'sort_headings' => [],
                 'resource_template' => null,
-                'template' => '',
-            ],
-            'separator' => [
-                'class' => '',
+                'components' => [],
+                'linkText' => '',
             ],
             'showcase' => [
-                'heading' => '',
                 'html' => '',
                 'entries' => [],
                 'thumbnail_type' => 'square',
                 'show_title_option' => 'item_title',
-                'divclass' => '',
-                'template' => '',
             ],
             'tableOfContents' => [
-                'depth' => null,
-                'heading' => '',
+                'depth' => 1,
                 'root' => false,
-                'template' => '',
             ],
             'treeStructure' => [
-                'heading' => '',
                 'root' => '',
                 'term' => 'dcterms:hasPart',
                 'expanded' => 0,
-                'template' => '',
             ],
             'twitter' => [
-                'heading' => '',
                 'account' => '',
                 'limit' => 1,
                 'retweet' => false,
                 'authorization' => '',
                 'api' => '1.1',
-                'template' => '',
                 // Account data are stored because the id is required in Twitter api v2.
                 'account_data' => [],
                 // The bearer token is saved separately when it is an automatic one.

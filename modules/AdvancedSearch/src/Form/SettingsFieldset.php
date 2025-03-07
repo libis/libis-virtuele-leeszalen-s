@@ -2,7 +2,7 @@
 
 namespace AdvancedSearch\Form;
 
-use Common\Form\Element as CommonElement;
+use AdvancedSearch\Form\Element as AdvancedSearchElement;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
 
@@ -18,6 +18,11 @@ class SettingsFieldset extends Fieldset
      */
     protected $searchConfigsApi = [];
 
+    /**
+     * @var bool
+     */
+    protected $restrictUsedTerms = false;
+
     protected $label = 'Advanced Search (admin board)'; // @translate
 
     protected $elementGroups = [
@@ -30,21 +35,23 @@ class SettingsFieldset extends Fieldset
         $this
             ->setAttribute('id', 'advanced-search')
             ->setOption('element_groups', $this->elementGroups)
+            /** @deprecated Since Omeka v3.1 */
             ->add([
-                'name' => 'advancedsearch_fulltextsearch_alto',
+                'name' => 'advancedsearch_restrict_used_terms',
                 'type' => Element\Checkbox::class,
                 'options' => [
                     'element_group' => 'search',
-                    'label' => 'Add xml alto text to full text search', // @translate
-                    'info' => 'Allow to search text stored in xml alto files without including it in a property.', // @translate
+                    'label' => 'Restrict to used properties and resources classes', // @translate
+                    'info' => 'If checked, restrict the list of properties and resources classes to the used ones in advanced search form.', // @translate
                 ],
                 'attributes' => [
-                    'id' => 'advancedsearch_fulltextsearch_alto',
+                    'id' => 'advancedsearch_restrict_used_terms',
+                    'value' => $this->restrictUsedTerms,
                 ],
             ])
             ->add([
                 'name' => 'advancedsearch_main_config',
-                'type' => CommonElement\OptionalSelect::class,
+                'type' => AdvancedSearchElement\OptionalSelect::class,
                 'options' => [
                     'element_group' => 'advanced_search',
                     'label' => 'Default search page (admin)', // @translate
@@ -58,7 +65,7 @@ class SettingsFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'advancedsearch_configs',
-                'type' => CommonElement\OptionalMultiCheckbox::class,
+                'type' => AdvancedSearchElement\OptionalMultiCheckbox::class,
                 'options' => [
                     'element_group' => 'advanced_search',
                     'label' => 'Available search pages', // @translate
@@ -70,7 +77,7 @@ class SettingsFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'advancedsearch_api_config',
-                'type' => CommonElement\OptionalSelect::class,
+                'type' => AdvancedSearchElement\OptionalSelect::class,
                 'options' => [
                     'element_group' => 'advanced_search',
                     'label' => 'Quick api search via external search engine', // @translate
@@ -82,28 +89,20 @@ class SettingsFieldset extends Fieldset
                     'id' => 'advancedsearch_api_config',
                 ],
             ])
-            // TODO Remove this option if there is no issue with async (except multiple search engines).
+            // TODO Remove this useless option.
             ->add([
-                'name' => 'advancedsearch_index_batch_edit',
-                'type' => CommonElement\OptionalRadio::class,
+                'name' => 'advancedsearch_batch_size',
+                'type' => Element\Number::class,
                 'options' => [
                     'element_group' => 'advanced_search',
-                    'label' => 'Indexing after a batch edit process', // @translate
-                    'info' => 'On some complex databases, an issue may occur after a batch process.', // @translate
-                    'value_options' => [
-                        // TODO Use async indexation when short batch edit and sync when background batch edit?
-                        // 'auto' => 'Automatic', // @translate
-                        'sync' => 'Synchronous', // @translate
-                        'async' => 'Asynchronous', // @translate
-                        'integrated' => 'Integrated', // @translate
-                        'none' => 'None', // @translate
-                    ],
+                    'label' => 'Search batch size for reindexation', // @translate
+                    'info' => 'Default is 100, but it can be adapted according to your resource average size, your mapping and your architecture.', // @translate
                 ],
                 'attributes' => [
-                    'id' => 'advancedsearch_index_batch_edit',
+                    'id' => 'advancedsearch_batch_size',
+                    'min' => 1,
                 ],
-            ])
-        ;
+            ]);
     }
 
     public function setSearchConfigs(array $searchConfigs): self
@@ -115,6 +114,12 @@ class SettingsFieldset extends Fieldset
     public function setSearchConfigsApi(array $searchConfigsApi): self
     {
         $this->searchConfigsApi = $searchConfigsApi;
+        return $this;
+    }
+
+    public function setRestrictUsedTerms(bool $restrictUsedTerms): self
+    {
+        $this->restrictUsedTerms = $restrictUsedTerms;
         return $this;
     }
 }

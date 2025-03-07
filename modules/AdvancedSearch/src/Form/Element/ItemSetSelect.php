@@ -2,9 +2,6 @@
 
 namespace AdvancedSearch\Form\Element;
 
-use Common\Form\Element\TraitGroupByOwner;
-use Common\Form\Element\TraitOptionalElement;
-
 class ItemSetSelect extends \Omeka\Form\Element\ItemSetSelect
 {
     use TraitGroupByOwner;

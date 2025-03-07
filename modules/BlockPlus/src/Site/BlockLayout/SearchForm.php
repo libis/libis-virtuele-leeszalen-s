@@ -7,8 +7,9 @@ use Omeka\Api\Representation\SitePageBlockRepresentation;
 use Omeka\Api\Representation\SitePageRepresentation;
 use Omeka\Api\Representation\SiteRepresentation;
 use Omeka\Site\BlockLayout\AbstractBlockLayout;
+use Omeka\Site\BlockLayout\TemplateableBlockLayoutInterface;
 
-class SearchForm extends AbstractBlockLayout
+class SearchForm extends AbstractBlockLayout implements TemplateableBlockLayoutInterface
 {
     /**
      * The default partial view script.
@@ -32,7 +33,7 @@ class SearchForm extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['blockplus']['block_settings']['searchForm'];
         $blockFieldset = \BlockPlus\Form\SearchFormFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         $dataForm = [];
         foreach ($data as $key => $value) {
@@ -45,10 +46,9 @@ class SearchForm extends AbstractBlockLayout
         return $view->formCollection($fieldset);
     }
 
-    public function render(PhpRenderer $view, SitePageBlockRepresentation $block)
+    public function render(PhpRenderer $view, SitePageBlockRepresentation $block, $templateViewScript = self::PARTIAL_NAME)
     {
-        $data = $block->data();
-        $vars = ['block' => $block] + $data;
+        $vars = ['block' => $block] + $block->data();
 
         $searchConfig = $vars['search_config'] ?? '';
         if ($searchConfig === 'omeka') {
@@ -69,17 +69,13 @@ class SearchForm extends AbstractBlockLayout
         $vars['searchConfig'] = $searchConfig;
         unset($vars['search_config']);
 
-        if (empty($data['link'])) {
+        if (empty($vars['link'])) {
             $link = [];
         } else {
-            $link = explode(' ', $data['link'], 2);
+            $link = explode(' ', $vars['link'], 2);
             $vars['link'] = ['url' => trim($link[0]), 'label' => trim($link[1] ?? '')];
         }
 
-        $template = $vars['template'] ?: self::PARTIAL_NAME;
-        unset($vars['template']);
-        return $template !== self::PARTIAL_NAME && $view->resolver($template)
-            ? $view->partial($template, $vars)
-            : $view->partial(self::PARTIAL_NAME, $vars);
+        return $view->partial($templateViewScript, $vars);
     }
 }

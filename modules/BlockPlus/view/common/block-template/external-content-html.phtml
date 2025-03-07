@@ -1,0 +1,73 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\SitePageBlockRepresentation $block
+ * @var array $embeds
+ * @var string $showTitleOption
+ * @var string $linkText
+ * @var string $linkUrl
+ */
+
+$plugins = $this->getHelperPluginManager();
+$escape = $plugins->get('escapeHtml');
+$hyperlink = $plugins->get('hyperlink');
+$escapeAttr = $plugins->get('escapeHtmlAttr');
+$blockGroupData = $plugins->get('blockGroupData');
+
+// This template is mainly used for compatibility with old themes.
+
+$html = $blockGroupData($block, 'html', 'text');
+?>
+
+<div class="block external-content media-text">
+
+<div class="media file">
+    <div class="embeds attachments">
+<?php foreach ($embeds as $embed): ?>
+    <div class="item resource">
+    <?php
+    $data = $embed['data'];
+    if ($data):
+        if ($data['type'] == 'photo') {
+            $url = $data['url'];
+            $width = $data['width'];
+            $height = $data['height'];
+            $title = empty($data['title']) ? $url : $data['title'];
+            echo sprintf(
+                '<img loading="lazy" src="%s" width="%s" height="%s" alt="%s">',
+                $escapeAttr($url),
+                $escapeAttr($width),
+                $escapeAttr($height),
+                $escapeAttr($title)
+            );
+        } elseif ($html) {
+            echo $html;
+        } else {
+            $showTitleOption = 'title';
+        }
+
+        if ($showTitleOption === 'title'):
+            $source = $embed['source'];
+            $title = empty($data['title']) ? $source : $data['title'];
+        ?>
+        <h3><?= $hyperlink($title, $source) ?></h3>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <?php $caption = $data['caption'] ?? null; ?>
+    <?php if ($caption): ?>
+        <div class="caption">
+            <?= $caption ?>
+        </div>
+    <?php endif; ?>
+    </div>
+<?php endforeach; ?>
+    </div>
+</div>
+
+<?php if ($linkText && $linkUrl): ?>
+<?= $hyperlink($linkText, $linkUrl) ?>
+<?php elseif ($linkText): ?>
+<span><?= $escape($linkText) ?></span>
+<?php endif; ?>
+</div>

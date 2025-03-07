@@ -1,0 +1,68 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var array $attachments Contains keys:
+ *   - asset (AssetRepresentation)
+ *   - page (PageRepresentation)
+ *   - caption (string): the html is purified according to settings
+ *   - alt_link_title (string)
+ *
+ * The optional class and url may be set at start of each caption like:
+ * ```
+ * url = https://example.org/
+ * class = xxx yyy
+ * Next lines are the true caption.
+ * ```
+ *
+ * The caption may be an html one.
+ *
+ * @see \BlockPlus\View\Helper\AssetElement
+ */
+
+$plugins = $this->getHelperPluginManager();
+$escape = $plugins->get('escapeHtml');
+$thumbnail = $plugins->get('thumbnail');
+$escapeAttr = $plugins->get('escapeHtmlAttr');
+
+// Manage display when the module is disabled.
+$thumbnail = $plugins->has('assetElement') ? $plugins->get('assetElement') : $plugins->get('thumbnail');
+$captionClassAndUrl = $plugins->get('captionClassAndUrl') ? $plugins->get('captionClassAndUrl') : fn($string) => [trim((string) $string), '', '', $string !== strip_tags($string)];
+?>
+
+<div class="assets">
+    <?php
+    foreach ($attachments as $attachment):
+        $asset = $attachment['asset'];
+        $assetImage = $asset ? $thumbnail($asset, 'square') : '';
+        $page = $attachment['page'] ?? null;
+        $caption = trim($attachment['caption'] ?? '');
+        if (strlen($caption)) {
+            [$caption, $class, $url, $isHtmlCaption] = $captionClassAndUrl($caption);
+        } else {
+            $class = '';
+            $url = '';
+        }
+    ?>
+    <div class="asset<?= strlen($class) ? ' ' . $escapeAttr($class) : '' ?>">
+        <?php if ($page): ?>
+            <a href="<?= $escapeAttr($page->siteUrl()) ?>">
+                <?= $assetImage ?>
+                <?php $altLinkTitle = $attachment['alt_link_title'] ?? ''; ?>
+                <span class="link-title"><?= strlen($altLinkTitle) ? $escape($altLinkTitle) : $escape($page->title()) ?></span>
+            </a>
+        <?php elseif ($url): ?>
+            <a href="<?= $escapeAttr($url) ?>"<?php if (filter_var($url, FILTER_VALIDATE_URL)): ?> target="_blank" rel="noopener"<?php endif; ?>>
+                <?= $assetImage ?>
+                <?php if ($altLinkTitle = $attachment['alt_link_title'] ?? ''): ?>
+                <span class="link-title"><?= $escape($altLinkTitle) ?></span>
+                <?php endif; ?>
+            </a>
+        <?php else: ?>
+            <?= $assetImage ?>
+        <?php endif; ?>
+        <?php if (strlen($caption)): ?>
+        <div class="caption"><?= $isHtmlCaption ? $caption : $escape($caption) ?></div>
+        <?php endif; ?>
+    </div>
+  <?php endforeach; ?>
+</div>

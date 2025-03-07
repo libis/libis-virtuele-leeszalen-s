@@ -1,0 +1,36 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource
+ * @var array $buttons List of buttons.
+ */
+
+$plugins = $this->getHelperPluginManager();
+$escape = $plugins->get('escapeHtml');
+$translate = $plugins->get('translate');
+$htmlAttributes = $plugins->get('htmlAttributes');
+?>
+
+<div class="block resource-block block-buttons">
+    <?php if ($buttons): ?>
+    <ul class="share-buttons">
+    <?php foreach ($buttons as $button => $data): ?>
+    <li>
+        <?php switch ($button):
+            case 'download':
+            case 'email':
+            case 'facebook':
+            case 'pinterest':
+            case 'twitter':
+            default:
+            ?>
+        <a <?= $htmlAttributes($data['attrs']) ?>>
+            <?= $translate($data['label']) ?>
+        </a>
+        <?php break;
+            endswitch; ?>
+    </li>
+    <?php endforeach; ?>
+    <?php endif; ?>
+    </ul>
+</div>

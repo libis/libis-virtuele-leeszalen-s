@@ -7,8 +7,9 @@ use Omeka\Api\Representation\SitePageBlockRepresentation;
 use Omeka\Api\Representation\SitePageRepresentation;
 use Omeka\Api\Representation\SiteRepresentation;
 use Omeka\Site\BlockLayout\AbstractBlockLayout;
+use Omeka\Site\BlockLayout\TemplateableBlockLayoutInterface;
 
-class ItemSetShowcase extends AbstractBlockLayout
+class ItemSetShowcase extends AbstractBlockLayout implements TemplateableBlockLayoutInterface
 {
     /**
      * The default partial view script.
@@ -32,7 +33,7 @@ class ItemSetShowcase extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['blockplus']['block_settings']['itemSetShowcase'];
         $blockFieldset = \BlockPlus\Form\ItemSetShowcaseFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         $dataForm = [];
         foreach ($data as $key => $value) {
@@ -47,7 +48,7 @@ class ItemSetShowcase extends AbstractBlockLayout
         return $view->formCollection($fieldset, false);
     }
 
-    public function render(PhpRenderer $view, SitePageBlockRepresentation $block)
+    public function render(PhpRenderer $view, SitePageBlockRepresentation $block, $templateViewScript = self::PARTIAL_NAME)
     {
         $api = $view->plugin('api');
 
@@ -66,15 +67,15 @@ class ItemSetShowcase extends AbstractBlockLayout
 
         $vars = [
             'block' => $block,
-            'heading' => $block->dataValue('heading', ''),
             'itemSets' => $itemSets,
             'thumbnailType' => $block->dataValue('thumbnail_type', 'square'),
             'showTitleOption' => $block->dataValue('show_title_option', 'item_title'),
-            'mediaUrlOption' => $block->dataValue('media_url', 'item_set_mediaurl'),
         ];
-        $template = $block->dataValue('template', self::PARTIAL_NAME);
-        return $template !== self::PARTIAL_NAME && $view->resolver($template)
-            ? $view->partial($template, $vars)
-            : $view->partial(self::PARTIAL_NAME, $vars);
+        return $view->partial($templateViewScript, $vars);
+    }
+
+    public function getFulltextText(PhpRenderer $view, SitePageBlockRepresentation $block)
+    {
+        return strip_tags((string) $this->render($view, $block));
     }
 }

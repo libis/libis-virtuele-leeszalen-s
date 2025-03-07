@@ -1,0 +1,72 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var array $attachments Contains keys:
+ *   - asset (AssetRepresentation)
+ *   - page (PageRepresentation)
+ *   - caption (string): the html is purified according to settings
+ *   - alt_link_title (string)
+ *
+ * The optional class and url may be set at start of each caption like:
+ * ```
+ * url = https://example.org/
+ * class = xxx yyy
+ * Next lines are the true caption.
+ * ```
+ *
+ * The caption may be an html one.
+ * @see \BlockPlus\View\Helper\AssetElement
+ */
+
+$plugins = $this->getHelperPluginManager();
+$escape = $plugins->get('escapeHtml');
+$thumbnail = $plugins->get('thumbnail');
+$escapeAttr = $plugins->get('escapeHtmlAttr');
+
+// Manage display when the module is disabled.
+$thumbnail = $plugins->has('assetElement') ? $plugins->get('assetElement') : $plugins->get('thumbnail');
+$captionClassAndUrl = $plugins->get('captionClassAndUrl') ? $plugins->get('captionClassAndUrl') : fn($string) => [trim((string) $string), '', '', $string !== strip_tags($string)];
+?>
+
+<style>
+.align-left { float: left; margin-right: 6px; }
+.align-right { float: right; margin-left: 6px; }
+.clear { clear: both; }
+</style>
+
+<div class="block block-asset assets">
+    <?php $index = 0;
+    foreach ($attachments as $attachment):
+        $asset = $attachment['asset'];
+        $assetImage = $asset ? $thumbnail($asset, 'square') : '';
+        $page = $attachment['page'] ?? null;
+        $caption = trim($attachment['caption'] ?? '');
+        if (strlen($caption)) {
+            [$caption, $class, $url, $isHtmlCaption] = $captionClassAndUrl($caption);
+        } else {
+            $class = '';
+            $url = '';
+        }
+    ?>
+    <div class="asset<?= strlen($class) ? ' ' . $escapeAttr($class) : '' ?>">
+        <?php if ($asset): ?>
+            <?php $attachmentUrl = $page ? $page->siteUrl() : $url ?>
+            <?php if ($attachmentUrl): ?>
+        <a class="<?= ++$index % 2 ? 'align-left' : 'align-right' ?>" href="<?= $escapeAttr($attachmentUrl) ?>"<?php if (filter_var($attachmentUrl, FILTER_VALIDATE_URL)): ?> target="_blank" rel="noopener"<?php endif; ?>>
+            <?= $assetElement($asset, ['alt' => $attachment['alt_link_title']]) ?>
+        </a>
+            <?php else: ?>
+        <span class="<?= ++$index % 2 ? 'align-left' : 'align-right' ?>">
+            <?= $assetElement($asset, ['alt' => $attachment['alt_link_title'] ?? '']) ?>
+        </span>
+            <?php endif; ?>
+        <?php endif; ?>
+        <?php if (strlen($caption)): ?>
+        <div class="caption">
+            <?= $caption ?>
+        </div>
+        <?php endif; ?>
+        <div class="clear"></div>
+    </div>
+    <?php endforeach; ?>
+</div>

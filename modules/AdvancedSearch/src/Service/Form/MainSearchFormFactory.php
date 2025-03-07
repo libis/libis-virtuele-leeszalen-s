@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 /*
- * Copyright Daniel Berthereau, 2018-2024
+ * Copyright Daniel Berthereau, 2018-2023
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -45,13 +45,12 @@ class MainSearchFormFactory implements FactoryInterface
             : null;
         return (new MainSearchForm(null, $options))
             ->setBasePath($helpers->get('basePath')())
-            ->setEasyMeta($services->get('EasyMeta'))
-            ->setItemSetsTree($services->has('ItemSetsTree') ? $services->get('ItemSetsTree') : null)
             ->setSite($currentSite)
             ->setSettings($services->get('Omeka\Settings'))
             ->setSiteSetting($siteSetting)
             ->setFormElementManager($services->get('FormElementManager'))
             ->setEntityManager($services->get('Omeka\EntityManager'))
+            ->setReferences($plugins->has('references') ? $plugins->get('references') : null)
         ;
     }
 }

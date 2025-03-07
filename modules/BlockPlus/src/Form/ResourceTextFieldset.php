@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
+
 namespace BlockPlus\Form;
 
-use BlockPlus\Form\Element\TemplateSelect;
-use BlockPlus\Form\Element\ThumbnailTypeSelect;
+use Common\Form\Element as CommonElement;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
 
@@ -15,23 +15,9 @@ class ResourceTextFieldset extends Fieldset
         $this
             ->add([
                 'name' => 'o:block[__blockIndex__][o:data][thumbnail_type]',
-                'type' => ThumbnailTypeSelect::class,
+                'type' => CommonElement\ThumbnailTypeSelect::class,
                 'options' => [
                     'label' => 'Thumbnail type', // @translate
-                ],
-                'attributes' => [
-                    'class' => 'chosen-select',
-                ],
-            ])
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][alignment]',
-                'type' => Element\Select::class,
-                'options' => [
-                    'label' => 'Thumbnail alignment', // @translate
-                    'value_options' => [
-                        'left' => 'left', // @translate
-                        'right' => 'right', // @translate
-                    ],
                 ],
                 'attributes' => [
                     'class' => 'chosen-select',
@@ -68,30 +54,12 @@ class ResourceTextFieldset extends Fieldset
                 ],
             ])
             ->add([
-                'name' => 'o:block[__blockIndex__][o:data][heading]',
-                'type' => Element\Text::class,
-                'options' => [
-                    'label' => 'Block title', // @translate
-                ],
-            ])
-            ->add([
                 'name' => 'o:block[__blockIndex__][o:data][html]',
                 'type' => Element\Textarea::class,
                 'attributes' => [
                     'class' => 'block-html full wysiwyg',
                 ],
             ])
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][template]',
-                'type' => TemplateSelect::class,
-                'options' => [
-                    'label' => 'Template to display', // @translate
-                    'info' => 'Templates are in folder "common/block-layout" of the theme and should start with "resource-text".', // @translate
-                    'template' => 'common/block-layout/resource-text',
-                ],
-                'attributes' => [
-                    'class' => 'chosen-select',
-                ],
-            ]);
+        ;
     }
 }

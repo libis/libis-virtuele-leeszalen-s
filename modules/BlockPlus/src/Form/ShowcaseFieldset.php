@@ -3,6 +3,7 @@
 namespace BlockPlus\Form;
 
 use BlockPlus\Form\Element as BlockPlusElement;
+use Common\Form\Element as CommonElement;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
 use Omeka\Form\Element as OmekaElement;
@@ -14,16 +15,6 @@ class ShowcaseFieldset extends Fieldset
         // Attachments fields are managed separately.
 
         $this
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][heading]',
-                'type' => Element\Text::class,
-                'options' => [
-                    'label' => 'Block title', // @translate
-                ],
-                'attributes' => [
-                    'id' => 'showcase-heading',
-                ],
-            ])
             ->add([
                 'name' => 'o:block[__blockIndex__][o:data][html]',
                 'type' => Element\Textarea::class,
@@ -41,7 +32,7 @@ class ShowcaseFieldset extends Fieldset
                 ],
                 'attributes' => [
                     'id' => 'showcase-entries',
-                    'rows' => 6,
+                    'rows' => 7,
                     'placeholder' => '1
 item-set/2
 main-site
@@ -54,7 +45,7 @@ https://example.org = assetId = Title = Caption = Body
             ])
             ->add([
                 'name' => 'o:block[__blockIndex__][o:data][thumbnail_type]',
-                'type' => BlockPlusElement\ThumbnailTypeSelect::class,
+                'type' => CommonElement\ThumbnailTypeSelect::class,
                 'options' => [
                     'label' => 'Thumbnail type', // @translate
                 ],
@@ -71,28 +62,6 @@ https://example.org = assetId = Title = Caption = Body
                     'class' => 'chosen-select',
                 ],
             ])
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][divclass]',
-                'type' => Element\Text::class,
-                'options' => [
-                    'label' => 'CSS class', // @translate
-                ],
-                'attributes' => [
-                    'id' => 'showcase-divclass',
-                ],
-            ])
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][template]',
-                'type' => BlockPlusElement\TemplateSelect::class,
-                'options' => [
-                    'label' => 'Template to display', // @translate
-                    'info' => 'Templates are in folder "common/block-layout" of the theme and should start with "showcase".', // @translate
-                    'template' => 'common/block-layout/showcase',
-                ],
-                'attributes' => [
-                    'id' => 'showcase-template',
-                    'class' => 'chosen-select',
-                ],
-            ]);
+        ;
     }
 }

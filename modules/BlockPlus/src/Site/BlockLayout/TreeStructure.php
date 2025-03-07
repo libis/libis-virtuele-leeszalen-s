@@ -7,8 +7,9 @@ use Omeka\Api\Representation\SitePageBlockRepresentation;
 use Omeka\Api\Representation\SitePageRepresentation;
 use Omeka\Api\Representation\SiteRepresentation;
 use Omeka\Site\BlockLayout\AbstractBlockLayout;
+use Omeka\Site\BlockLayout\TemplateableBlockLayoutInterface;
 
-class TreeStructure extends AbstractBlockLayout
+class TreeStructure extends AbstractBlockLayout implements TemplateableBlockLayoutInterface
 {
     /**
      * The default partial view script.
@@ -32,7 +33,7 @@ class TreeStructure extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['blockplus']['block_settings']['treeStructure'];
         $blockFieldset = \BlockPlus\Form\TreeStructureFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         $dataForm = [];
         foreach ($data as $key => $value) {
@@ -45,16 +46,14 @@ class TreeStructure extends AbstractBlockLayout
         return $view->formCollection($fieldset);
     }
 
-    public function render(PhpRenderer $view, SitePageBlockRepresentation $block)
+    public function render(PhpRenderer $view, SitePageBlockRepresentation $block, $templateViewScript = self::PARTIAL_NAME)
     {
-        $vars = $block->data();
-        $vars['block'] = $block;
+        $vars = ['block' => $block] + $block->data();
+        return $view->partial($templateViewScript, $vars);
+    }
 
-        $template = $block->dataValue('template', self::PARTIAL_NAME);
-        unset($vars['template']);
-
-        return $template !== self::PARTIAL_NAME && $view->resolver($template)
-            ? $view->partial($template, $vars)
-            : $view->partial(self::PARTIAL_NAME, $vars);
+    public function getFulltextText(PhpRenderer $view, SitePageBlockRepresentation $block)
+    {
+        return strip_tags((string) $this->render($view, $block));
     }
 }

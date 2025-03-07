@@ -1,0 +1,12 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\SitePageBlockRepresentation $block
+ * @var \Laminas\Navigation\Navigation $subNav
+ * @var int $maxDepth
+ */
+?>
+
+<nav class="block toc-block">
+    <?= $subNav ? $this->navigation($subNav)->menu()->renderMenu(null, ['maxDepth' => $maxDepth]) : '' ?>
+</nav>

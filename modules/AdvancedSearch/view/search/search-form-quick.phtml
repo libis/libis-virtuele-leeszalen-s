@@ -3,36 +3,33 @@
  * @var \Laminas\View\Renderer\PhpRenderer $this
  * @var \Laminas\Form\Form $form
  * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig
- *
- * The quick form keeps only:
- * - the main field ("q"),
- * - the record or fulltext option ("rft"),
- * - the required and hidden elements,
- * - the button submit.
+ * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchPage Alias of $searchConfig
  */
+
+// This quick form displays only the first field (the main one) and the required or hidden elements.
 
 $params = $this->params()->fromQuery() ?: [];
 $form
     ->setData($params)
     ->prepare();
 
-// This check is useless when the form is called with option "variant" = "quick".
-// TODO This check and this template will be removed in a future version.
-
-foreach ($form->getElements() as $name => $element) {
-    if (in_array($name, ['q', 'rft', 'submit'])
-        || $element instanceof \Laminas\Form\Element\Csrf
-        || $element instanceof \Laminas\Form\Element\Hidden
-        || $element->getOption('required')
-    ) {
+$main = null;
+foreach ($form->getElements() as $element):
+    if ($element instanceof \Laminas\Form\Element\Csrf || $element instanceof \Laminas\Form\Element\Hidden || $element instanceof \Laminas\Form\Element\Submit):
         continue;
-    }
-    $form->remove($name);
-}
+    endif;
+    if ($main):
+        if (!$element->getOption('required')):
+            $form->remove($element->getName());
+        endif;
+    else:
+        $main = $element;
+    endif;
+endforeach;
 
-foreach ($form->getFieldsets() as $name => $fieldset) {
-    $form->remove($name);
-}
+foreach ($form->getFieldsets() as $fieldset):
+    $form->remove($fieldset->getName());
+endforeach;
 ?>
 
 <?= $this->form($form) ?>

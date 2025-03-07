@@ -2,7 +2,9 @@
 
 namespace AdvancedSearch\View\Helper;
 
-class FacetLinksTree extends AbstractFacetTree
+class FacetLinksTree extends AbstractFacet
 {
     protected $partial = 'search/facet-links';
+
+    protected $isTree = true;
 }

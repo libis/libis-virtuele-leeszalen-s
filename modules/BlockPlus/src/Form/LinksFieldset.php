@@ -2,10 +2,8 @@
 
 namespace BlockPlus\Form;
 
-use BlockPlus\Form\Element\TemplateSelect;
-use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
-use Omeka\Form\Element\ArrayTextarea;
+use Omeka\Form\Element as OmekaElement;
 
 class LinksFieldset extends Fieldset
 {
@@ -13,15 +11,8 @@ class LinksFieldset extends Fieldset
     {
         $this
             ->add([
-                'name' => 'o:block[__blockIndex__][o:data][heading]',
-                'type' => Element\Text::class,
-                'options' => [
-                    'label' => 'Block title', // @translate
-                ],
-            ])
-            ->add([
                 'name' => 'o:block[__blockIndex__][o:data][links]',
-                'type' => ArrayTextarea::class,
+                'type' => OmekaElement\ArrayTextarea::class,
                 'options' => [
                     'label' => 'Links', // @translate
                     'as_key_value' => true,
@@ -31,18 +22,6 @@ class LinksFieldset extends Fieldset
                     'placeholder' => '/s/main/page/alpha = Alpha
 /s/main/page/beta = Beta = short description
 ',
-                ],
-            ])
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][template]',
-                'type' => TemplateSelect::class,
-                'options' => [
-                    'label' => 'Template to display', // @translate
-                    'info' => 'Templates are in folder "common/block-layout" of the theme and should start with "links".', // @translate
-                    'template' => 'common/block-layout/links',
-                ],
-                'attributes' => [
-                    'class' => 'chosen-select',
                 ],
             ]);
     }

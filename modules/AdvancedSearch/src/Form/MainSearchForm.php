@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 /*
- * Copyright Daniel Berthereau 2018-2024
+ * Copyright Daniel Berthereau 2018-2023
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -30,8 +30,6 @@
 namespace AdvancedSearch\Form;
 
 use AdvancedSearch\Form\Element as AdvancedSearchElement;
-use Common\Form\Element as CommonElement;
-use Common\Stdlib\EasyMeta;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Query\Expr\Join;
 use Laminas\Form\Element;
@@ -43,18 +41,29 @@ use Omeka\Api\Representation\SiteRepresentation;
 use Omeka\Form\Element as OmekaElement;
 use Omeka\Settings\Settings;
 use Omeka\View\Helper\Setting;
+use Reference\Mvc\Controller\Plugin\References;
 
 class MainSearchForm extends Form
 {
     /**
-     * @var \Common\Stdlib\EasyMeta
+     * @var string
      */
-    protected $easyMeta;
+    protected $basePath;
 
     /**
-     * @var \Doctrine\ORM\EntityManager
+     * @var SiteRepresentation
      */
-    protected $entityManager;
+    protected $site;
+
+    /**
+     * @var Settings
+     */
+    protected $settings;
+
+    /**
+     * @var Setting
+     */
+    protected $siteSetting;
 
     /**
      * @var \Laminas\Form\FormElementManager
@@ -62,39 +71,14 @@ class MainSearchForm extends Form
     protected $formElementManager;
 
     /**
-     * @var \ItemSetsTree\ViewHelper\ItemSetsTree
+     * @var \Doctrine\ORM\EntityManager
      */
-    protected $itemSetsTree;
+    protected $entityManager;
 
     /**
-     * @var \Omeka\Settings\Settings
+     * @var \Reference\Mvc\Controller\Plugin\References|null
      */
-    protected $settings;
-
-    /**
-     * @var \Omeka\View\Helper\Setting
-     */
-    protected $siteSetting;
-
-    /**
-     * @var string
-     */
-    protected $basePath;
-
-    /**
-     * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation
-     */
-    protected $searchConfig;
-
-    /**
-     * @var \Omeka\Api\Representation\SiteRepresentation
-     */
-    protected $site;
-
-    /**
-     * @var array
-     */
-    protected $elementAttributes = [];
+    protected $references;
 
     /**
      * @var array
@@ -106,23 +90,8 @@ class MainSearchForm extends Form
      */
     protected $listInputFilters = [];
 
-    /**
-     * @var bool
-     */
-    protected $skipValues = false;
-
-    /**
-     * Variant may be "quick" or "simple", or "csrf" (internal use).
-     *
-     * @var string
-     */
-    protected $variant = null;
-
     public function init(): void
     {
-        // The attribute "form" is appended to all fields to simplify themes,
-        // unless the settings skip it.
-
         // The id is different from the Omeka search to avoid issues in js. The
         // css should be adapted.
         $this
@@ -131,13 +100,7 @@ class MainSearchForm extends Form
                 'class' => 'search-form form-search',
             ]);
 
-        $this->searchConfig = $this->getOption('search_config');
-
-        $this->skipValues = (bool) $this->getOption('skip_values');
-
-        $this->variant = $this->getOption('variant');
-
-        $this->formSettings = $this->searchConfig ? $this->searchConfig->settings() : [];
+        // The attribute "form" is appended to all fields to simplify themes.
 
         // Omeka adds a csrf automatically in \Omeka\Form\Initializer\Csrf.
         // Remove the csrf, because it is useless for a search form and the url
@@ -151,19 +114,12 @@ class MainSearchForm extends Form
         }
         unset($name);
 
-        // TODO Currently, the csrf is removed, so it is never checked.
-        if ($this->variant === 'csrf') {
-            return;
-        }
+        /** @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig */
+        $searchConfig = $this->getOption('search_config');
+        $this->formSettings = $searchConfig ? $searchConfig->settings() : [];
 
         // Check specific fields against all available fields.
-        // For speed, don't get available fields with variants "simple" and "csrf".
-        // TODO Check the required options for variant "quick" to skip available fields early.
-        $availableFields = in_array($this->variant, ['simple', 'csrf']) ? [] : $this->getAvailableFields();
-
-        $this->elementAttributes = empty($this->formSettings['filters']['attribute_form'])
-            ? []
-            : ['form' => 'form-search'];
+        $availableFields = $this->getAvailableFields();
 
         // The main query is always the first element and submit the last one.
         // TODO Allow to order and to skip "q" (include it as a standard filter).
@@ -177,10 +133,9 @@ class MainSearchForm extends Form
                 ],
                 'attributes' => [
                     'id' => 'q',
+                    'form' => 'form-search',
                     'data-type-field' => 'q',
-                    'placeholder' => 'Search',
-                    'aria-label' => 'Search',
-                ] + $this->elementAttributes,
+                ],
             ])
         ;
 
@@ -189,7 +144,7 @@ class MainSearchForm extends Form
             $suggester = $this->formSettings['autosuggest']['suggester'] ?? null;
             if ($suggester) {
                 // TODO Use url helper.
-                $autoSuggestUrl = $this->basePath . ($this->site ? '/s/' . $this->site->slug() : '/admin') . '/' . ($this->searchConfig ? $this->searchConfig->path() : 'search') . '/suggest';
+                $autoSuggestUrl = $this->basePath . ($this->site ? '/s/' . $this->site->slug() : '/admin') . '/' . ($searchConfig ? $searchConfig->path() : 'search') . '/suggest';
             }
         }
         if ($autoSuggestUrl) {
@@ -201,10 +156,6 @@ class MainSearchForm extends Form
                     ->setAttribute('data-autosuggest-param-name', $this->formSettings['autosuggest']['url_param_name']);
             }
         }
-
-        // Add the button for record or full text search.
-        $rft = in_array($this->variant, ['simple', 'csrf']) ? null : ($this->formSettings['search']['fulltext_search'] ?? null);
-        $this->appendRecordOrFullText($rft);
 
         foreach ($this->formSettings['form']['filters'] ?? [] as $filter) {
             if (empty($filter['field'])) {
@@ -222,19 +173,6 @@ class MainSearchForm extends Form
 
             $field = $filter['field'];
             $type = $filter['type'];
-
-            // Don't create useless elements.
-            // In particular, it allows to skip creation of selects, that is
-            // slow for now in big databases.
-            if (in_array($this->variant, ['quick', 'simple', 'csrf'])
-                // The type may be missing.
-                && !in_array($type, ['', 'Hidden', 'hidden', \Laminas\Form\Element\Hidden::class, 'Csrf', 'csrf', \Laminas\Form\Element\Csrf::class])
-                // No need to check the field name here: "q", "rft" and "submit"
-                // are managed separately.
-                // TODO Required elements for "quick" cannot be checked for now.
-            ) {
-                continue;
-            }
 
             $element = null;
 
@@ -283,9 +221,6 @@ class MainSearchForm extends Form
                     case 'item_sets_tree':
                         $element = $this->searchItemSetsTree($filter);
                         break;
-                    case 'thesaurus':
-                        $element = $this->searchThesaurus($filter);
-                        break;
                     default:
                         $method = 'search' . $type;
                         $element = method_exists($this, $method)
@@ -306,7 +241,7 @@ class MainSearchForm extends Form
             }
         }
 
-        if (!empty($this->formSettings['form']['button_reset']) && !in_array($this->variant, ['quick', 'simple', 'csrf'])) {
+        if (!empty($this->formSettings['form']['button_reset'])) {
             $this
                 ->add([
                     'name' => 'reset',
@@ -319,9 +254,10 @@ class MainSearchForm extends Form
                     ],
                     'attributes' => [
                         'id' => 'reset',
+                        'form' => 'form-search',
                         'type' => 'reset',
                         'class' => 'search-reset',
-                    ] + $this->elementAttributes,
+                    ],
                 ]);
         }
 
@@ -338,76 +274,14 @@ class MainSearchForm extends Form
                     ],
                     'attributes' => [
                         'id' => 'submit',
+                        'form' => 'form-search',
                         'type' => 'submit',
                         'class' => 'search-submit',
-                    ] + $this->elementAttributes,
+                    ],
                 ]);
         }
 
         $this->appendInputFilters();
-    }
-
-    /**
-     * Add a simple filter to limit search to record or not.
-     */
-    protected function appendRecordOrFullText(?string $rft): self
-    {
-        switch ($rft) {
-            case 'fulltext_checkbox':
-                $element = new Element\Checkbox('rft');
-                $element
-                    ->setLabel('Search full text') // @translate
-                    ->setOptions([
-                        'unchecked_value' => 'record',
-                        'checked_value' => 'all',
-                    ])
-                    ->setAttribute('id', 'rft')
-                    ->setAttribute('form', 'form-search')
-                ;
-                return $this->add($element);
-            case 'record_checkbox':
-                $element = new Element\Checkbox('rft');
-                $element
-                    ->setLabel('Record only') // @translate
-                    ->setOptions([
-                        'unchecked_value' => 'all',
-                        'checked_value' => 'record',
-                    ])
-                    ->setAttribute('id', 'rft')
-                    ->setAttribute('form', 'form-search')
-                ;
-                return $this->add($element);
-            case 'fulltext_radio':
-                $element = new CommonElement\OptionalRadio('rft');
-                $element
-                    // The empty label allows to have a fieldset wrapping radio.
-                    ->setLabel(' ')
-                    ->setValueOptions([
-                        'all' => 'Full text', // @ŧranslate
-                        'record' => 'Record only', // @ŧranslate
-                    ])
-                    ->setAttribute('id', 'rft')
-                    ->setAttribute('form', 'form-search')
-                    ->setValue('all')
-                ;
-                return $this->add($element);
-            case 'record_radio':
-                $element = new CommonElement\OptionalRadio('rft');
-                $element
-                    // The empty label allows to have a fieldset wrapping radio.
-                    ->setLabel(' ')
-                    ->setValueOptions([
-                        'record' => 'Record only', // @ŧranslate
-                        'all' => 'Full text', // @ŧranslate
-                    ])
-                    ->setAttribute('id', 'rft')
-                    ->setAttribute('form', 'form-search')
-                    ->setValue('record')
-                ;
-                return $this->add($element);
-            default:
-                return $this;
-        }
     }
 
     /**
@@ -453,7 +327,8 @@ class MainSearchForm extends Form
             ])
             ->setAttributes([
                 'id' => 'search-filters',
-            ] + $this->elementAttributes)
+                'form' => 'form-search',
+            ])
         ;
 
         return $element;
@@ -490,8 +365,9 @@ class MainSearchForm extends Form
                     'label' => 'From', // @translate
                 ],
                 'attributes' => [
+                    'form' => 'form-search',
                     'placeholder' => 'YYYY', // @translate
-                ] + $this->elementAttributes,
+                ],
             ])
             ->add([
                 'name' => 'to',
@@ -500,8 +376,9 @@ class MainSearchForm extends Form
                     'label' => 'To', // @translate
                 ],
                 'attributes' => [
+                    'form' => 'form-search',
                     'placeholder' => 'YYYY', // @translate
-                ] + $this->elementAttributes,
+                ],
             ])
         ;
 
@@ -522,7 +399,7 @@ class MainSearchForm extends Form
     protected function searchMultiCheckbox(array $filter): ?ElementInterface
     {
         $valueOptions = $this->prepareValueOptions($filter);
-        $element = new CommonElement\OptionalMultiCheckbox($filter['field']);
+        $element = new AdvancedSearchElement\OptionalMultiCheckbox($filter['field']);
         $element
             ->setLabel($filter['label'])
             ->setValueOptions($valueOptions)
@@ -572,7 +449,7 @@ class MainSearchForm extends Form
     protected function searchRadio(array $filter): ?ElementInterface
     {
         $valueOptions = $this->prepareValueOptions($filter);
-        $element = new CommonElement\OptionalRadio($filter['field']);
+        $element = new AdvancedSearchElement\OptionalRadio($filter['field']);
         $element
             ->setLabel($filter['label'])
             ->setValueOptions($valueOptions)
@@ -594,7 +471,7 @@ class MainSearchForm extends Form
         $attributes['data-placeholder'] ??= ' ';
         $attributes['data-field-type'] = $fieldType;
 
-        $element = new CommonElement\OptionalSelect($filter['field']);
+        $element = new AdvancedSearchElement\OptionalSelect($filter['field']);
         $element
             ->setLabel($filter['label'])
             ->setOptions([
@@ -623,79 +500,13 @@ class MainSearchForm extends Form
     }
 
     /**
-     * Manage hierachical values for module Thesaurus.
-     *
-     * @see \AdvancedSearch\Form\MainSearchForm::searchThesaurus()
-     * @see \AdvancedSearch\View\Helper\AbstractFacetTree::thesaurusQuick()
-     */
-    protected function searchThesaurus(array $filter): ?ElementInterface
-    {
-        // No fallback when the thesaurus select is not present, because the
-        // collection id or the customvocab id are not known.
-        if (!$this->formElementManager->has(\Thesaurus\Form\Element\ThesaurusSelect::class)) {
-            // TODO Add a fallback for ThesaurusSelect.
-            return null;
-        }
-
-        $filterOptions = $filter['options'];
-        if (empty($filterOptions['id']) && empty($filterOptions['thesaurus'])) {
-            $thesaurusId = (int) reset($filterOptions);
-            $k = key($filterOptions);
-            unset($filterOptions[$k]);
-        } else {
-            $thesaurusId = (int) ($filterOptions['thesaurus'] ?? $filterOptions['id'] ?? 0);
-            unset($filterOptions['id'], $filterOptions['thesaurus']);
-        }
-        if (!$thesaurusId) {
-            return null;
-        }
-        $filterOptions['thesaurus'] = $thesaurusId;
-        // Set ascendance to true by default, else the type Thesaurus is useless
-        // anyway.
-        $filterOptions['ascendance'] = !in_array($filterOptions['ascendance'] ?? null, [0, false, '0', 'false'], true);
-
-        // A thesaurus search should be like an advanced filter, because the
-        // search is done on item id, not value text. The issue is only on
-        // internal search, because the index may be managed in solr.
-        // So the form adapter manage it directly via main key "thesaurus".
-
-        $fieldset = new Fieldset('thesaurus');
-        $fieldset
-            ->setAttributes([
-                'id' => 'search-thesaurus',
-                'data-field-type' => 'thesaurus',
-            ] + $this->elementAttributes);
-
-        /** @var \Thesaurus\Form\Element\ThesaurusSelect::class $element */
-        $element = $this->formElementManager->get(\Thesaurus\Form\Element\ThesaurusSelect::class);
-        $element
-            ->setName($filter['field'])
-            ->setOptions([
-                'label' => $filter['label'], // @translate
-                'empty_option' => '',
-            ] + $filterOptions)
-            ->setAttributes([
-                'id' => 'search-thesaurus',
-                'multiple' => true,
-                'class' => 'chosen-select',
-                'data-placeholder' => ' ',
-            ] + $this->elementAttributes)
-        ;
-
-        $fieldset
-            ->add($element);
-
-        return $fieldset;
-    }
-
-    /**
      * The resource type is the main type for end user, but the name in omeka.
      */
     protected function searchResourceType(array $filter): ?ElementInterface
     {
         $element = $filter['type'] === 'MultiCheckbox'
-            ? new CommonElement\OptionalMultiCheckbox('resource_type')
-            : new CommonElement\OptionalSelect('resource_type');
+            ? AdvancedSearchElement\OptionalMultiCheckbox('resource_type')
+            : AdvancedSearchElement\OptionalSelect('resource_type');
         $element
             ->setOptions([
                 'label' => $filter['label'], // @translate
@@ -707,10 +518,11 @@ class MainSearchForm extends Form
             ])
             ->setAttributes([
                 'id' => 'search-resource-type',
+                'form' => 'form-search',
                 'multiple' => true,
                 'class' => $filter['type'] === 'MultiCheckbox' ? '' : 'chosen-select',
                 'data-placeholder' => 'Select resource type…', // @translate
-            ] + $this->elementAttributes)
+            ])
         ;
 
         return $element;
@@ -727,8 +539,9 @@ class MainSearchForm extends Form
             ])
             ->setAttributes([
                 'id' => 'search-id',
+                'form' => 'form-search',
                 'data-field-type' => $filter['type'] === 'MultiText' ? 'multitext' : 'text',
-            ] + $this->elementAttributes)
+            ])
         ;
 
         return $element;
@@ -743,8 +556,9 @@ class MainSearchForm extends Form
             ])
             ->setAttributes([
                 'id' => 'search-is-public',
+                'form' => 'form-search',
                 'data-field-type' => 'checkbox',
-            ] + $this->elementAttributes)
+            ])
         ;
 
         return $element;
@@ -756,24 +570,26 @@ class MainSearchForm extends Form
         $fieldset
             ->setAttributes([
                 'id' => 'search-owners',
+                'form' => 'form-search',
                 'data-field-type' => 'owner',
-            ] + $this->elementAttributes)
+            ])
             ->add([
                 'name' => 'id',
                 'type' => $filter['type'] === 'MultiCheckbox'
-                    ? CommonElement\OptionalMultiCheckbox::class
-                    : CommonElement\OptionalSelect::class,
+                    ? AdvancedSearchElement\OptionalMultiCheckbox::class
+                    : AdvancedSearchElement\OptionalSelect::class,
                 'options' => [
                     'label' => $filter['label'], // @translate
-                    'value_options' => $this->skipValues ? [] : $this->getOwnerOptions(),
+                    'value_options' => $this->getOwnerOptions(),
                     'empty_option' => '',
                 ],
                 'attributes' => [
                     'id' => 'search-owner-id',
+                    'form' => 'form-search',
                     'multiple' => true,
                     'class' => $filter['type'] === 'MultiCheckbox' ? '' : 'chosen-select',
                     'data-placeholder' => 'Select owners…', // @translate
-                ] + $this->elementAttributes,
+                ],
             ])
         ;
 
@@ -786,24 +602,26 @@ class MainSearchForm extends Form
         $fieldset
             ->setAttributes([
                 'id' => 'search-sites',
+                'form' => 'form-search',
                 'data-field-type' => 'site',
-            ] + $this->elementAttributes)
+            ])
             ->add([
                 'name' => 'id',
                 'type' => $filter['type'] === 'MultiCheckbox'
-                    ? CommonElement\OptionalMultiCheckbox::class
-                    : CommonElement\OptionalSelect::class,
+                    ? AdvancedSearchElement\OptionalMultiCheckbox::class
+                    : AdvancedSearchElement\OptionalSelect::class,
                 'options' => [
                     'label' => $filter['label'], // @translate
-                    'value_options' => $this->skipValues ? [] : $this->getSiteOptions(),
+                    'value_options' => $this->getSiteOptions(),
                     'empty_option' => '',
                 ],
                 'attributes' => [
                     'id' => 'search-site-id',
+                    'form' => 'form-search',
                     'multiple' => true,
                     'class' => $filter['type'] === 'MultiCheckbox' ? '' : 'chosen-select',
                     'data-placeholder' => 'Select sites…', // @translate
-                ] + $this->elementAttributes,
+                ],
             ])
         ;
 
@@ -818,8 +636,9 @@ class MainSearchForm extends Form
         $fieldset = new Fieldset('class');
         $fieldset->setAttributes([
             'id' => 'search-classes',
+            'form' => 'form-search',
             'data-field-type' => 'class',
-        ] + $this->elementAttributes);
+        ]);
 
         /** @var \Omeka\Form\Element\ResourceClassSelect $element */
         $element = $this->formElementManager->get(OmekaElement\ResourceClassSelect::class);
@@ -837,7 +656,6 @@ class MainSearchForm extends Form
         /* @deprecated (Omeka v3.1): use option "disable_group_by_vocabulary" */
         if ($filter['type'] === 'SelectFlat'
             && version_compare(\Omeka\Module::VERSION, '3.1', '<')
-            && !$this->skipValues
         ) {
             $valueOptions = $element->getValueOptions();
             $result = [];
@@ -855,7 +673,7 @@ class MainSearchForm extends Form
                 }
             }
             natcasesort($result);
-            $element = new CommonElement\OptionalSelect;
+            $element = new AdvancedSearchElement\OptionalSelect;
             $element
                 ->setOptions([
                     'label' => $filter['label'], // @translate
@@ -868,10 +686,11 @@ class MainSearchForm extends Form
             ->setName('id')
             ->setAttributes([
                 'id' => 'search-class-id',
+                'form' => 'form-search',
                 'multiple' => true,
                 'class' => 'chosen-select',
                 'data-placeholder' => 'Select classes…', // @translate
-            ] + $this->elementAttributes);
+            ]);
 
         $fieldset
             ->add($element);
@@ -889,8 +708,9 @@ class MainSearchForm extends Form
         $fieldset = new Fieldset('template');
         $fieldset->setAttributes([
             'id' => 'search-templates',
+            'form' => 'form-search',
             'data-field-type' => 'template',
-        ] + $this->elementAttributes);
+        ]);
 
         /** @var \Omeka\Form\Element\ResourceTemplateSelect $element */
         $element = $this->formElementManager->get(OmekaElement\ResourceTemplateSelect::class);
@@ -905,16 +725,14 @@ class MainSearchForm extends Form
             ])
             ->setAttributes([
                 'id' => 'search-template-id',
+                'form' => 'form-search',
                 'multiple' => true,
                 'class' => 'chosen-select',
                 'data-placeholder' => 'Select templates…', // @translate
-            ] + $this->elementAttributes);
+            ]);
 
         $hasValues = false;
-        if ($this->siteSetting
-            && $this->siteSetting->__invoke('advancedsearch_restrict_templates', false)
-            && !$this->skipValues
-        ) {
+        if ($this->siteSetting && $this->siteSetting->__invoke('advancedsearch_restrict_templates', false)) {
             $values = $this->siteSetting->__invoke('advancedsearch_apply_templates', []);
             if ($values) {
                 $values = array_intersect_key($element->getValueOptions(), array_flip($values));
@@ -923,7 +741,7 @@ class MainSearchForm extends Form
                     $fieldset
                         ->add([
                             'name' => 'id',
-                            'type' => CommonElement\OptionalSelect::class,
+                            'type' => AdvancedSearchElement\OptionalSelect::class,
                             'options' => [
                                 'label' => $filter['label'], // @translate
                                 'value_options' => $values,
@@ -931,10 +749,11 @@ class MainSearchForm extends Form
                             ],
                             'attributes' => [
                                 'id' => 'search-template-id',
+                                'form' => 'form-search',
                                 'multiple' => true,
                                 'class' => 'chosen-select',
                                 'data-placeholder' => 'Select templates…', // @translate
-                            ] + $this->elementAttributes,
+                            ],
                         ])
                     ;
                 }
@@ -957,25 +776,27 @@ class MainSearchForm extends Form
         $fieldset
             ->setAttributes([
                 'id' => 'search-item-sets',
+                'form' => 'form-search',
                 'data-field-type' => 'itemset',
-            ] + $this->elementAttributes)
+            ])
             ->add([
                 'name' => 'id',
                 'type' => $filter['type'] === 'MultiCheckbox'
-                    ? CommonElement\OptionalMultiCheckbox::class
-                    : CommonElement\OptionalSelect::class,
+                    ? AdvancedSearchElement\OptionalMultiCheckbox::class
+                    : AdvancedSearchElement\OptionalSelect::class,
                 'options' => [
                     'label' => $filter['label'], // @translate
-                    'value_options' => $this->skipValues ? [] : $this->getItemSetsOptions($filter['type'] !== 'MultiCheckbox'),
+                    'value_options' => $this->getItemSetsOptions($filter['type'] !== 'MultiCheckbox'),
                     'empty_option' => '',
                 ],
                 'attributes' => [
                     'id' => 'search-item-set-id',
+                    'form' => 'form-search',
                     'multiple' => true,
                     'class' => $filter['type'] === 'MultiCheckbox' ? '' : 'chosen-select',
                     // End users understand "collections" more than "item sets".
                     'data-placeholder' => 'Select collections…', // @translate
-                ] + $this->elementAttributes,
+                ],
             ])
         ;
 
@@ -991,25 +812,27 @@ class MainSearchForm extends Form
         $fieldset
             ->setAttributes([
                 'id' => 'search-item-sets-tree',
+                'form' => 'form-search',
                 'data-field-type' => 'itemset',
-            ] + $this->elementAttributes)
+            ])
             ->add([
                 'name' => 'id',
                 'type' => $filter['type'] === 'MultiCheckbox'
-                    ? CommonElement\OptionalMultiCheckbox::class
-                    : CommonElement\OptionalSelect::class,
+                    ? AdvancedSearchElement\OptionalMultiCheckbox::class
+                    : AdvancedSearchElement\OptionalSelect::class,
                 'options' => [
                     'label' => $filter['label'], // @translate
-                    'value_options' => $this->skipValues ? [] : $this->getItemSetsTreeOptions($filter['type'] !== 'MultiCheckbox'),
+                    'value_options' => $this->getItemSetsTreeOptions($filter['type'] !== 'MultiCheckbox'),
                     'empty_option' => '',
                 ],
                 'attributes' => [
                     'id' => 'search-item-sets-tree',
-                    'multiple' => false,
+                    'form' => 'form-search',
+                    'multiple' => true,
                     'class' => $filter['type'] === 'MultiCheckbox' ? '' : 'chosen-select',
                     // End users understand "collections" more than "item sets".
                     'data-placeholder' => 'Select collections…', // @translate
-                ] + $this->elementAttributes,
+                ],
             ])
         ;
 
@@ -1033,13 +856,14 @@ class MainSearchForm extends Form
         $fieldset
             ->setAttributes([
                 'id' => 'search-access',
+                'form' => 'form-search',
                 'data-field-type' => 'access',
-            ] + $this->elementAttributes)
+            ])
             ->add([
                 'name' => 'id',
                 'type' => $filter['type'] === 'Radio'
-                    ? CommonElement\OptionalRadio::class
-                    : CommonElement\OptionalSelect::class,
+                    ? AdvancedSearchElement\OptionalRadio::class
+                    : AdvancedSearchElement\OptionalSelect::class,
                 'options' => [
                     'label' => $filter['label'], // @translate
                     'value_options' => $valueOptions,
@@ -1047,19 +871,15 @@ class MainSearchForm extends Form
                 ],
                 'attributes' => [
                     'id' => 'search-access',
+                    'form' => 'form-search',
                     // 'multiple' => false,
                     'class' => $filter['type'] === 'Radio' ? '' : 'chosen-select',
                     'data-placeholder' => 'Select access…', // @translate
-                ] + $this->elementAttributes,
+                ],
             ])
         ;
 
         return $fieldset;
-    }
-
-    protected function searchTree(array $filter): ?ElementInterface
-    {
-        return $this->searchItemSetsTree($filter);
     }
 
     /**
@@ -1095,17 +915,12 @@ class MainSearchForm extends Form
      */
     protected function prepareValueOptions(array $filter): array
     {
-        if ($this->skipValues) {
-            return [];
-        }
-
         $options = $filter['options'];
         if ($options === null || $options === [] || $options === '') {
             return $this->listValuesForProperty($filter['field']);
         }
         if (is_string($options)) {
-            // TODO Explode may use another string than "|".
-            $options = array_filter(array_map('trim', explode('|', $options)), 'strlen');
+            $options = array_filter(array_map('trim', explode($options)), 'strlen');
         } elseif (!is_array($options)) {
             return [(string) $options => $options];
         }
@@ -1120,9 +935,6 @@ class MainSearchForm extends Form
      * @todo Use the real search engine, not the internal one.
      * @todo Use a suggester for big lists.
      * @todo Support any resources, not only item.
-     *
-     * Note: In version previous 3.4.15, the module Reference was used, that
-     * managed languages, but a lot slower for big databases.
      *
      * @todo Factorize with \AdvancedSearch\Querier\InternalQuerier::fillFacetResponse()
      * @see \AdvancedSearch\Querier\InternalQuerier::fillFacetResponse()
@@ -1149,40 +961,46 @@ class MainSearchForm extends Form
         $multifields = $searchEngine->settingAdapter('multifields', []);
         $fields = [];
         $fields[$field] = $metadataFieldsToNames[$field]
-            ?? $this->easyMeta->propertyTerm($field)
+            ?? $this->getPropertyTerm($field)
             ?? $multifields[$field]['fields']
             ?? $field;
 
-        // Simplified from References::listDataForProperty().
-        /** @see \Reference\Mvc\Controller\Plugin\References::listDataForProperties() */
-        $fields = reset($fields);
-        if (!is_array($fields)) {
-            $fields = [$fields];
+        if ($this->references) {
+            $list = $this->references->__invoke(
+                $fields,
+                $this->site ? ['site_id' => $this->site->id()] : [],
+                ['output' => 'associative']
+            )->list();
+            $list = array_keys(reset($list)['o:references']);
+        } else {
+            // Simplified from References::listDataForProperty().
+            $fields = reset($fields);
+            if (!is_array($fields)) {
+                $fields = [$fields];
+            }
+            $propertyIds = array_intersect_key($this->getPropertyIds(), array_flip($fields));
+            if (!$propertyIds) {
+                return [];
+            }
+            $qb = $this->entityManager->createQueryBuilder();
+            $expr = $qb->expr();
+            $qb
+                ->select('COALESCE(value.value, valueResource.title, value.uri) AS val')
+                ->from(\Omeka\Entity\Value::class, 'value')
+                // This join allow to check visibility automatically too.
+                ->innerJoin(\Omeka\Entity\Item::class, 'resource', Join::WITH, $expr->eq('value.resource', 'resource'))
+                // The values should be distinct for each type.
+                ->leftJoin(\Omeka\Entity\Item::class, 'valueResource', Join::WITH, $expr->eq('value.valueResource', 'valueResource'))
+                ->andWhere($expr->in('value.property', ':properties'))
+                ->setParameter('properties', implode(',', $propertyIds))
+                ->groupBy('val')
+                ->orderBy('val', 'asc')
+            ;
+            $list = array_column($qb->getQuery()->getScalarResult(), 'val', 'val');
+            // Fix false empty duplicate or values without title.
+            $list = array_keys(array_flip($list));
+            unset($list['']);
         }
-        $propertyIds = $this->easyMeta->propertyIds($fields);
-        if (!$propertyIds) {
-            return [];
-        }
-
-        $qb = $this->entityManager->createQueryBuilder();
-        $expr = $qb->expr();
-        $qb
-            ->select('COALESCE(value.value, valueResource.title, value.uri) AS val')
-            ->from(\Omeka\Entity\Value::class, 'value')
-            // This join allow to check visibility automatically too.
-            ->innerJoin(\Omeka\Entity\Item::class, 'resource', Join::WITH, $expr->eq('value.resource', 'resource'))
-            // The values should be distinct for each type.
-            ->leftJoin(\Omeka\Entity\Item::class, 'valueResource', Join::WITH, $expr->eq('value.valueResource', 'valueResource'))
-            ->andWhere($expr->in('value.property', ':properties'))
-            ->setParameter('properties', implode(',', $propertyIds))
-            ->groupBy('val')
-            ->orderBy('val', 'asc')
-        ;
-        $list = array_column($qb->getQuery()->getScalarResult(), 'val', 'val');
-        // Fix false empty duplicate or values without title.
-        $list = array_keys(array_flip($list));
-        unset($list['']);
-
         return array_combine($list, $list);
     }
 
@@ -1208,47 +1026,30 @@ class MainSearchForm extends Form
         return $valueOptions;
     }
 
-    /**
-     * @todo Use form element itemSetsTreeSelect when exists (only a view helper for now).
-     * @see \ItemSetsTree\ViewHelper\ItemSetsTreeSelect
-     */
     protected function getItemSetsTreeOptions($byOwner = false): array
     {
-        // Fallback when the module ItemSetsTree is not present.
-        if (!$this->itemSetsTree) {
-            return $this->getItemSetsOptions($byOwner);
+        if (!$this->formElementManager->has('itemSetsTreeSelect')) {
+            return [];
         }
 
-        if ($this->formElementManager->has(\ItemSetsTree\Form\Element\ItemSetsTreeSelect::class)) {
-            /** @var \ItemSetsTree\Form\Element\ItemSetsTreeSelect $element */
-            $element = $this->formElementManager->get(\ItemSetsTree\Form\Element\ItemSetsTreeSelect::class);
-            return $element->getValueOptions();
-        }
-
-        $options = [];
+        /** @var \Omeka\Form\Element\ItemSetSelect $select */
+        $select = $this->formElementManager->get(\Omeka\Form\Element\ItemSetSelect::class, []);
         if ($this->site) {
-            $options['site_id'] = $this->site->id();
+            $select->setOptions([
+                'query' => ['site_id' => $this->site->id(), 'sort_by' => 'dcterms:title', 'sort_order' => 'asc'],
+                'disable_group_by_owner' => true,
+            ]);
+            // By default, sort is case sensitive. So use a case insensitive sort.
+            $valueOptions = $select->getValueOptions();
+            natcasesort($valueOptions);
+        } else {
+            $select->setOptions([
+                'query' => ['sort_by' => 'dcterms:title', 'sort_order' => 'asc'],
+                'disable_group_by_owner' => !$byOwner,
+            ]);
+            $valueOptions = $select->getValueOptions();
         }
-
-        $itemSetsTree = $this->itemSetsTree->getItemSetsTree(null, $options);
-
-        $itemSetsTreeValueOptions = null;
-        $itemSetsTreeValueOptions = function ($itemSetsTree, $depth = 0) use (&$itemSetsTreeValueOptions): array {
-            $valueOptions = [];
-            foreach ($itemSetsTree as $itemSetsTreeNode) {
-                $itemSet = $itemSetsTreeNode['itemSet'];
-                $valueOptions[$itemSet->id()] = [
-                    'value' => $itemSet->id(),
-                    'label' => str_repeat('‒', $depth) . ' ' . $itemSet->displayTitle(),
-                ];
-                $valueOptions = array_merge($valueOptions, $itemSetsTreeValueOptions($itemSetsTreeNode['children'], $depth + 1));
-            }
-            return $valueOptions;
-        };
-
-        $valueOptions = $itemSetsTreeValueOptions($itemSetsTree);
-
-        return array_column($valueOptions, 'label', 'value');
+        return $valueOptions;
     }
 
     protected function getOwnerOptions(): array
@@ -1267,25 +1068,39 @@ class MainSearchForm extends Form
 
     protected function getAvailableFields(): array
     {
-        $adapter = $this->searchConfig->searchAdapter();
-        return $adapter ? $adapter->getAvailableFields() : [];
+        /** @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig */
+        $searchConfig = $this->getOption('search_config');
+        $searchEngine = $searchConfig->engine();
+        $searchAdapter = $searchEngine->adapter();
+        if (empty($searchAdapter)) {
+            return [];
+        }
+        return $searchAdapter->setSearchEngine($searchEngine)->getAvailableFields();
+    }
+
+    /**
+     * Get a property term or id.
+     */
+    protected function getPropertyTerm($termOrId): ?string
+    {
+        return $this->getOption('search_config')->getServiceLocator()->get('ViewHelperManager')
+            ->get('easyMeta')->propertyTerms($termOrId);
+    }
+
+    /**
+     * Get all property ids by term.
+     *
+     * @return array Associative array of ids by term.
+     */
+    protected function getPropertyIds(): array
+    {
+        return $this->getOption('search_config')->getServiceLocator()->get('ViewHelperManager')
+            ->get('easyMeta')->propertyIds();
     }
 
     public function setBasePath(string $basePath): Form
     {
         $this->basePath = $basePath;
-        return $this;
-    }
-
-    public function setEasyMeta(EasyMeta $easyMeta): Form
-    {
-        $this->easyMeta = $easyMeta;
-        return $this;
-    }
-
-    public function setItemSetsTree($itemSetsTree): Form
-    {
-        $this->itemSetsTree = $itemSetsTree;
         return $this;
     }
 
@@ -1295,7 +1110,7 @@ class MainSearchForm extends Form
         return $this;
     }
 
-    public function setSettings(Settings $settings): Form
+    public function setSettings(?Settings $settings = null): Form
     {
         $this->settings = $settings;
         return $this;
@@ -1316,6 +1131,12 @@ class MainSearchForm extends Form
     public function setEntityManager(EntityManager $entityManager): Form
     {
         $this->entityManager = $entityManager;
+        return $this;
+    }
+
+    public function setReferences(?References $references): Form
+    {
+        $this->references = $references;
         return $this;
     }
 }

@@ -81,10 +81,8 @@ class SearchForm extends AbstractHelper
      * @param array $options
      * - template (string): Specific partial for the search form.
      * - skip_form_action (bool): Don't set form action, so use the current page.
-     * - skip_partial_headers (bool): Skip partial headers.
-     * Other options are passed to the partial.
      */
-    protected function initSearchForm(?SearchConfigRepresentation $searchConfig = null, array $options = []): void
+    protected function initSearchForm(?SearchConfigRepresentation $searchConfig = null, array $options): void
     {
         $this->form = null;
         $this->partialHeaders = null;
@@ -116,7 +114,7 @@ class SearchForm extends AbstractHelper
             return;
         }
 
-        $this->form = $formAdapter->getForm($this->options);
+        $this->form = $formAdapter->getForm();
         if (!$this->form) {
             return;
         }

@@ -1,7 +1,7 @@
 <?php
 /*
  * Copyright BibLibre, 2016
- * Copyright Daniel Berthereau, 2017-2024
+ * Copyright Daniel Berthereau, 2017-2023
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -40,7 +40,6 @@
  */
 
 $plugins = $this->getHelperPluginManager();
-$url = $plugins->get('url');
 $api = $plugins->get('api');
 $partial = $plugins->get('partial');
 $escape = $plugins->get('escapeHtml');
@@ -53,8 +52,7 @@ $breadcrumbs = $plugins->has('breadcrumbs') ? $plugins->get('breadcrumbs') : nul
 
 $vars = $this->vars();
 
-$isAdmin = !isset($site);
-$setting = $plugins->get($isAdmin ? 'setting' : 'siteSetting');
+$setting = $plugins->get(isset($site) ? 'siteSetting' : 'setting');
 
 $filterLocale = (bool) $setting('filter_locale_values');
 $lang = $this->lang();
@@ -93,25 +91,18 @@ $this->headScript()
 <?php if ($breadcrumbs): ?>
     <?= $breadcrumbs() ?>
 <?php else: ?>
-<div class="breadcrumbs-parent">
-    <nav id="breadcrumb" class="breadcrumbs" aria-label="<?= $translate('Breadcrumb') ?>">
-        <ul>
-            <?php if (!$isAdmin): ?>
-            <li><?= $hyperlink($translate('Home'), $site->siteUrl()) ?></li>
-            <?php endif; ?>
-            <?php if ($itemSet): ?>
-            <li><?= $hyperlink($translate('Collections'), $url($isAdmin ? 'admin/default' : 'site/resource', ['controller' => 'item-set', 'action' => 'browse'], true)) ?></li>
-            <?php // It may be a span or a link + search. ?>
-            <li><span aria-current="page"><?= $escape($itemSet->displayTitle(null, $langTitle)) ?></span></li>
-            <?php /*
-            <li><?= $hyperlink($itemSet->displayTitle(null, $langTitle), $isAdmin ? $itemSet->adminUrl() : $itemSet->siteUrl($site->slug())) ?></li>
-            */ ?>
-            <?php else: ?>
-            <li><span aria-current="page"><?= $escape($translate('Search')) ?></span></li>
-            <?php endif; ?>
-        </ul>
-    </nav>
-</div>
+<nav id="breadcrumb" class="breadcrumbs">
+    <ul>
+        <?php if (isset($site)): ?>
+        <li><?= $hyperlink($translate('Home'), $site->siteUrl()) ?></li>
+        <?php endif; ?>
+        <?php if ($itemSet): ?>
+        <li><?= $translate('Collections') ?></li>
+        <li><span><?= isset($site) ? $itemSet->siteUrl($site->slug()) : $itemSet->adminUrl() ?></span></li>
+        <?php endif; ?>
+        <li><span><?= $escape($translate('Search')) ?></span></li>
+    </ul>
+</nav>
 <?php endif; ?>
 
 <div id="search-page">
@@ -154,6 +145,8 @@ $this->headScript()
             <?= $partial('search/results-header-footer', [
                 'site' => $site,
                 'searchConfig' => $searchConfig,
+                // Kept for compatibility with old themes.
+                'searchPage' => $searchConfig,
                 'query' => $query,
                 'response' => $response,
                 'itemSet' => $itemSet,
@@ -168,6 +161,7 @@ $this->headScript()
             <?= $partial('search/resource-list', [
                 'site' => $site,
                 'searchConfig' => $searchConfig,
+                'searchPage' => $searchConfig,
                 'query' => $query,
                 'response' => $response,
                 'title' => sprintf($translatePlural('%s item set', '%s item sets', $itemSetsCount), $itemSetsCount),
@@ -179,6 +173,7 @@ $this->headScript()
             <?= $partial('search/resource-list', [
                 'site' => $site,
                 'searchConfig' => $searchConfig,
+                'searchPage' => $searchConfig,
                 'query' => $query,
                 'response' => $response,
                 'title' => sprintf($translatePlural('%s item', '%s items', $itemsCount), $itemsCount),
@@ -192,6 +187,7 @@ $this->headScript()
             <?= $partial('search/results-header-footer', [
                 'site' => $site,
                 'searchConfig' => $searchConfig,
+                'searchPage' => $searchConfig,
                 'query' => $query,
                 'response' => $response,
                 'itemSet' => $itemSet,
@@ -225,6 +221,7 @@ $this->headScript()
     <?= $partial('search/facets', [
         'site' => $site,
         'searchConfig' => $searchConfig,
+        'searchPage' => $searchConfig,
         'query' => $query,
         'response' => $response,
         'itemSet' => $itemSet,

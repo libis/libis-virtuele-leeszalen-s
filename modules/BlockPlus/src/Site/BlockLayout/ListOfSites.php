@@ -8,9 +8,10 @@ use Omeka\Api\Representation\SitePageRepresentation;
 use Omeka\Api\Representation\SiteRepresentation;
 use Omeka\Entity\SitePageBlock;
 use Omeka\Site\BlockLayout\AbstractBlockLayout;
+use Omeka\Site\BlockLayout\TemplateableBlockLayoutInterface;
 use Omeka\Stdlib\ErrorStore;
 
-class ListOfSites extends AbstractBlockLayout
+class ListOfSites extends AbstractBlockLayout implements TemplateableBlockLayoutInterface
 {
     /**
      * The default partial view script.
@@ -42,7 +43,7 @@ class ListOfSites extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['blockplus']['block_settings']['listOfSites'];
         $blockFieldset = \BlockPlus\Form\ListOfSitesFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         $dataForm = [];
         foreach ($data as $key => $value) {
@@ -55,7 +56,7 @@ class ListOfSites extends AbstractBlockLayout
         return $view->formCollection($fieldset, false);
     }
 
-    public function render(PhpRenderer $view, SitePageBlockRepresentation $block)
+    public function render(PhpRenderer $view, SitePageBlockRepresentation $block, $templateViewScript = self::PARTIAL_NAME)
     {
         $sort = $block->dataValue('sort', 'alpha');
         $limit = $block->dataValue('limit');
@@ -110,17 +111,12 @@ class ListOfSites extends AbstractBlockLayout
 
         $vars = [
             'block' => $block,
-            'heading' => $block->dataValue('heading', ''),
             'sites' => $sites,
             'pagination' => $pagination,
             'summaries' => $summaries,
             'thumbnails' => $thumbnails,
-            'currentSite' => $block->page()->site(),
         ];
-        $template = $block->dataValue('template', self::PARTIAL_NAME);
-        return $template !== self::PARTIAL_NAME && $view->resolver($template)
-            ? $view->partial($template, $vars)
-            : $view->partial(self::PARTIAL_NAME, $vars);
+        return $view->partial($templateViewScript, $vars);
     }
 
     /**

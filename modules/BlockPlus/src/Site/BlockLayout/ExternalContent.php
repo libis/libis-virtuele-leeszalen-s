@@ -12,6 +12,7 @@ use Omeka\Api\Representation\SiteRepresentation;
 use Omeka\Entity\SitePageBlock;
 use Omeka\File\Downloader;
 use Omeka\Site\BlockLayout\AbstractBlockLayout;
+use Omeka\Site\BlockLayout\TemplateableBlockLayoutInterface;
 use Omeka\Stdlib\ErrorStore;
 use Omeka\Stdlib\HtmlPurifier;
 
@@ -20,7 +21,7 @@ use Omeka\Stdlib\HtmlPurifier;
  *
  * @link https://omeka.org/s/docs/user-manual/sites/site_pages/#media
  */
-class ExternalContent extends AbstractBlockLayout
+class ExternalContent extends AbstractBlockLayout implements TemplateableBlockLayoutInterface
 {
     use CommonTrait;
 
@@ -153,7 +154,7 @@ class ExternalContent extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['blockplus']['block_settings']['externalContent'];
         $blockFieldset = \BlockPlus\Form\ExternalContentFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         // TODO Manage multiple embedded resources with caption like media text.
         $data['embeds'] = empty($data['embeds'][0]['source'])
@@ -171,7 +172,7 @@ class ExternalContent extends AbstractBlockLayout
         return $view->formCollection($fieldset);
     }
 
-    public function render(PhpRenderer $view, SitePageBlockRepresentation $block)
+    public function render(PhpRenderer $view, SitePageBlockRepresentation $block, $templateViewScript = self::PARTIAL_NAME)
     {
         $vars = ['block' => $block] + $block->data();
 
@@ -181,25 +182,20 @@ class ExternalContent extends AbstractBlockLayout
             return '';
         }
 
-        $vars['alignmentClass'] = $vars['alignment'] ?? 'left';
         $vars['showTitleOption'] = $vars['show_title_option'] ?? 'item_title';
         $vars['captionPosition'] = $vars['caption_position'] ?? 'center';
         $vars['linkText'] = $vars['link_text'] ?? '';
         $vars['linkUrl'] = $vars['link_url'] ?? '';
 
-        $template = $vars['template'] ?: self::PARTIAL_NAME;
-        unset($vars['template'], $vars['alignment'], $vars['show_title_option'], $vars['caption_position'], $vars['link_text'], $vars['link_url']);
+        unset($vars['show_title_option'], $vars['caption_position'], $vars['link_text'], $vars['link_url']);
 
-        return $template !== self::PARTIAL_NAME && $view->resolver($template)
-            ? $view->partial($template, $vars)
-            : $view->partial(self::PARTIAL_NAME, $vars);
+        return $view->partial($templateViewScript, $vars);
     }
 
     public function getFulltextText(PhpRenderer $view, SitePageBlockRepresentation $block)
     {
         // TODO Add captions (they are not added in the core)?
-        return $block->dataValue('heading', '')
-            . ' ' . $block->dataValue('html', '');
+        return $block->dataValue('html', '');
     }
 
     /**

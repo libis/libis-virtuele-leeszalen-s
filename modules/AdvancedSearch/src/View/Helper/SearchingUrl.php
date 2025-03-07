@@ -2,7 +2,6 @@
 
 namespace AdvancedSearch\View\Helper;
 
-use Exception;
 use Laminas\View\Helper\AbstractHelper;
 
 class SearchingUrl extends AbstractHelper
@@ -19,31 +18,16 @@ class SearchingUrl extends AbstractHelper
     {
         $view = $this->getView();
 
-        // Check if the current site/admin has a search form.
-        $isSiteRequest = $view->status()->isSiteRequest();
-
-        $searchMainConfig = $isSiteRequest
-            ? $view->siteSetting('advancedsearch_main_config')
-            : $view->setting('advancedsearch_main_config');
-
-        if ($searchMainConfig) {
-            try {
-                /** @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig */
-                $searchConfig = $view->api()->read('search_configs', ['id' => $searchMainConfig])->getContent();
+        // Check if the current site has a search form.
+        $searchMainPage = $view->siteSetting('advancedsearch_main_config');
+        if ($searchMainPage) {
+            /** @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig */
+            $searchConfig = $view->api()->searchOne('search_configs', ['id' => $searchMainPage])->getContent();
+            if ($searchConfig) {
                 return $view->url('search-page-' . $searchConfig->id(), [], $options, true);
-            } catch (\Omeka\Api\Exception\NotFoundException $e) {
-                $view->logger()->err(
-                    'Search engine #{search_config_id} does not exist.', // @translate
-                    ['search_config_id' => $searchMainConfig]
-                );
-            } catch (Exception $e) {
-                $view->logger()->err(
-                    'Search engine {name} (#{search_config_id}) is not available.', // @translate
-                    ['name' => $searchConfig->name(), 'search_config_id' => $searchConfig->id()]
-                );
             }
         }
 
-        return $view->url($isSiteRequest ? 'site/resource' : 'admin/default', ['controller' => 'item', 'action' => $useItemSearch ? 'search' : 'browse'], $options, true);
+        return $view->url('site/resource', ['controller' => 'item', 'action' => $useItemSearch ? 'search' : 'browse'], $options, true);
     }
 }

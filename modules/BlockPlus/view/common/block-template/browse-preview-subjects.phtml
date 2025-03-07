@@ -1,0 +1,104 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\SitePageBlockRepresentation $block
+ * @var string $resourceType
+ * @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $resources
+ * @var string $heading
+ * @var string $linkText
+ * @var array $components
+ * @var array $query
+ */
+
+// Browse preview with the list of subjects as search url.
+
+$plugins = $this->getHelperPluginManager();
+$url = $plugins->get('url');
+$escape = $plugins->get('escapeHtml');
+$assetUrl = $plugins->get('assetUrl');
+$translate = $plugins->get('translate');
+$hyperlink = $plugins->get('hyperlink');
+$thumbnail = $plugins->get('thumbnail');
+$siteSetting = $plugins->get('siteSetting');
+$searchingValue = $plugins->has('searchingValue') ? $plugins->get('searchingValue') : null;
+
+$filterLocale = (bool) $siteSetting('filter_locale_values');
+$lang = $this->lang();
+$langValue = $filterLocale ? [$lang, ''] : null;
+
+$untitled = $translate('[Untitled]');
+
+$showThumbnail = in_array('thumbnail', $components);
+$showHeading = in_array('resource-heading', $components);
+$showBody = in_array('resource-body', $components);
+$headingTerm = $siteSetting('browse_heading_property_term');
+$bodyTerm = $siteSetting('browse_body_property_term');
+
+$this->headLink()->appendStylesheet($assetUrl('css/block-plus.css', 'BlockPlus'));
+?>
+
+<div class="preview-block">
+
+    <?php if ($heading): ?>
+    <h2><?= $escape($heading) ?></h2>
+    <?php endif; ?>
+
+    <ul class="resource-list preview">
+        <?php
+        $heading = '';
+        $body = '';
+        foreach ($resources as $resource):
+            if ($showHeading) {
+                $heading = $headingTerm ? $resource->value($headingTerm, ['default' => $untitled, 'lang' => $langValue]) : $resource->displayTitle(null, $langValue);
+            }
+            if ($showBody) {
+                $body = $bodyTerm ? $resource->value($bodyTerm, ['lang' => $langValue]) : $resource->displayDescription(null, $langValue);
+            }
+            $subjects = $resource->value('dcterms:subject', ['all' => true, 'lang' => $langValue]);
+            $linkContent = '';
+            if ($showThumbnail) {
+                $linkContent .= $thumbnail($resource, 'medium');
+            }
+            if ($showHeading) {
+                $linkContent .= '<span class="resource-name">' . $escape($heading) . '</span>';
+            }
+            ?>
+        <li class="resource <?= $resourceType ?>">
+            <?php if ($linkContent !== ''): ?>
+                <?= $resource->linkRaw($linkContent, null, ['class' => 'resource-link']) ?>
+            <?php endif; ?>
+            <?php if ($subjects): ?>
+            <ul class="resource-values subject">
+                <?php if ($searchingValue):
+                    foreach ($subjects as $value): ?>
+                <li><?= $searchingValue($value) ?></li>
+                    <?php endforeach;
+                else:
+                    foreach ($subjects as $value):
+                        $vr = $value->valueResource();
+                        $uri = $value->uri();
+                        $val = (string) $value->value();
+                        $uriOrVal = $uri ?: $val;
+                        $urlSearch = $url('site/resource', ['controller' => 'item', 'action' => 'browse'], [
+                            'property' => [['property' => 'dcterms:subject', 'type' => $vr ? 'res' : 'eq', 'text' => $vr ? $vr->id() : $uriOrVal]],
+                        ], true)
+                    ?>
+                <li><?= $hyperlink(strip_tags($value->asHtml()), $urlSearch, ['class' => 'metadata-search-link']) ?></li>
+                    <?php endforeach;
+                endif; ?>
+            </ul>
+            <?php endif; ?>
+            <?php if ($showBody && $body): ?>
+            <div class="description"><?= $escape($body) ?></div>
+            <?php endif; ?>
+        </li>
+    <?php endforeach; ?>
+    </ul>
+
+    <?php if ($linkText): ?>
+        <?= $hyperlink($linkText, $url(
+            'site/resource', ['controller' => $resourceType, 'action' => 'browse'], ['query' => $query], true
+        )) ?>
+    <?php endif; ?>
+
+</div>

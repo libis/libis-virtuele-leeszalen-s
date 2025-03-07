@@ -56,13 +56,10 @@ class UserBarDelegator extends UserBar
             return '';
         }
 
-        $locale = null;
-
         if ($user) {
             $hasAdminRights = $view->userIsAllowed('Omeka\Controller\Admin\Index', 'index');
             if ($hasAdminRights) {
-                $locale = $view->userSetting('locale') ?: ($view->setting('locale') ?: null);
-                $links = $this->links($view, $site, $user, $locale);
+                $links = $this->links($view, $site, $user);
                 $partialName = $partialName ?: self::PARTIAL_NAME;
             } else {
                 $links = [];
@@ -79,14 +76,13 @@ class UserBarDelegator extends UserBar
                 'site' => $site,
                 'user' => $user,
                 'links' => $links,
-                'userLocale' => $locale,
             ]
         );
     }
 
-    protected function links(RendererInterface $view, SiteRepresentation $site, User $user, ?string $locale = null)
+    protected function links(RendererInterface $view, SiteRepresentation $site, User $user)
     {
-        $links = parent::links($view, $site, $user, $locale);
+        $links = parent::links($view, $site, $user);
         // If already filled (board, site and something), don't change them.
         if (!$links || count($links) > 2) {
             return $links;
@@ -118,17 +114,16 @@ class UserBarDelegator extends UserBar
 
         // The resource is used only to create a class in partial.
         $links[] = [
-            // Don't use class "advanced-search" that is used in theme.
-            'resource' => 'advanced-search-config',
+            'resource' => 'advanced-search',
             'action' => 'browse',
-            'text' => $translate('Search manager', null, $locale), // @translate
+            'text' => $translate('Search manager'), // @translate
             'url' => $url('admin/search'),
         ];
 
         $links[] = [
-            'resource' => 'advanced-search-config',
+            'resource' => 'advanced-search',
             'action' => 'browse',
-            'text' => $translate('Search config', null, $locale), // @translate
+            'text' => $translate('Search config'), // @translate
             'url' => $url('admin/search/config-id', ['id' => $params['id'], 'action' => 'configure']),
         ];
 

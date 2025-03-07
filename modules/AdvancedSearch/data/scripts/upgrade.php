@@ -2,7 +2,7 @@
 
 namespace AdvancedSearch;
 
-use Common\Stdlib\PsrMessage;
+use Omeka\Stdlib\Message;
 
 /**
  * @var Module $this
@@ -19,18 +19,9 @@ use Common\Stdlib\PsrMessage;
 $plugins = $services->get('ControllerPluginManager');
 $api = $plugins->get('api');
 $settings = $services->get('Omeka\Settings');
-$translator = $services->get('MvcTranslator');
 $connection = $services->get('Omeka\Connection');
 $messenger = $plugins->get('messenger');
 $entityManager = $services->get('Omeka\EntityManager');
-
-if (!method_exists($this, 'checkModuleActiveVersion') || !$this->checkModuleActiveVersion('Common', '3.4.58')) {
-    $message = new \Omeka\Stdlib\Message(
-        'The module %1$s should be upgraded to version %2$s or later.', // @translate
-        'Common', '3.4.58'
-    );
-    throw new \Omeka\Module\Exception\ModuleCannotInstallException((string) $message);
-}
 
 if (version_compare($oldVersion, '3.3.6.2', '<')) {
     $this->checkDependencies();
@@ -73,7 +64,7 @@ if (version_compare($oldVersion, '3.3.6.3', '<')) {
     // connection.
     // $searchConfigPaths = $api->search('search_configs', [], ['returnScalar' => 'path'])->getContent();
     $sql = <<<'SQL'
-SELECT `id`, `path` FROM `search_config` ORDER BY `id` ASC;
+SELECT `id`, `path` FROM `search_config` ORDER BY `id`;
 SQL;
     $searchConfigPaths = $connection->fetchAllAssociative($sql);
     $searchConfigPaths = array_column($searchConfigPaths, 'path', 'id');
@@ -170,11 +161,7 @@ SQL;
 
     // Add the default search partial process for internal engine.
     // Add the default multi-fields to internal engine.
-    if (file_exists(__DIR__ . '/../../data/search_engines/internal.php')) {
-        $searchEngineConfig = require __DIR__ . '/../../data/search_engines/internal.php';
-    } else {
-        $searchEngineConfig = [];
-    }
+    $searchEngineConfig = require __DIR__ . '/../../data/search_engines/internal.php';
     $defaultAdapterSettings = $searchEngineConfig['o:settings']['adapter']
         ?? ['default_search_partial_word' => false, 'multifields' => []];
     $qb = $connection->createQueryBuilder();
@@ -210,78 +197,78 @@ SQL;
     $module = $moduleManager->getModule('Reference');
     $version = $module ? $module->getIni('version') : null;
     if ($version && version_compare($version, '3.4.32.3', '<')) {
-        $message = new PsrMessage(
-            'The module {module} should be updated to version {version}.', // @translate
-            ['module' => 'Reference', 'version' => '3.4.32.3']
+        $message = new Message(
+            'The module %s should be updated to version %s.', // @translate
+            'Reference', '3.4.32.3'
         );
         $messenger->addWarning($message);
     }
 
-    $message = new PsrMessage(
+    $message = new Message(
         'It is now possible to aggregate properties with the internal (sql) adapter. See config of the internal search engine.' // @translate
     );
     $messenger->addSuccess($message);
 
-    $message = new PsrMessage(
+    $message = new Message(
         'It is now possible to add a pagination per-page to the search page.' // @translate
     );
     $messenger->addSuccess($message);
 
-    $message = new PsrMessage(
+    $message = new Message(
         'It is now possible to use "not" in advanced filters.' // @translate
     );
     $messenger->addSuccess($message);
 
-    $message = new PsrMessage(
+    $message = new Message(
         'It is now possible to display the used search filters in the results header.' // @translate
     );
     $messenger->addSuccess($message);
 
-    $message = new PsrMessage(
+    $message = new Message(
         'Some field types have been renamed for filters in the form. To use the core input elements, the type should be "Omeka" (or prepend "Omeka/" if needed). See the default config page.' // @translate
     );
     $messenger->addWarning($message);
 }
 
 if (version_compare($oldVersion, '3.3.6.9', '<')) {
-    $message = new PsrMessage(
+    $message = new Message(
         'It is now possible to query ressources with linked ressources in the standard advanced form.' // @translate
     );
     $messenger->addWarning($message);
 }
 
 if (version_compare($oldVersion, '3.3.6.12', '<')) {
-    $message = new PsrMessage(
+    $message = new Message(
         'A new option was added to display the resources mixed (by default) or item sets and items separately (old behavior).' // @translate
     );
     $messenger->addWarning($message);
-    $message = new PsrMessage(
+    $message = new Message(
         'The template for the sort selector has been updated.' // @translate
     );
     $messenger->addWarning($message);
-    $message = new PsrMessage(
+    $message = new Message(
         'A helper for the pagination per page has been added.' // @translate
     );
     $messenger->addSuccess($message);
 }
 
 if (version_compare($oldVersion, '3.3.6.15', '<')) {
-    $message = new PsrMessage(
+    $message = new Message(
         'It’s now possible to search resources by multiples properties, and resources without class, template, item set, site or owner.' // @translate
     );
     $messenger->addSuccess($message);
 }
 
 if (version_compare($oldVersion, '3.3.6.16', '<')) {
-    $message = new PsrMessage(
+    $message = new Message(
         'It’s now possible to use facet range with a double select (from/to). With internal sql engine, order is alphabetic only for now: it works for strings and simple four digits years or standard dates, not integer or variable dates. With Solr, only numbers and dates are supported. The theme may need to be updated.' // @translate
     );
     $messenger->addSuccess($message);
-    $message = new PsrMessage(
+    $message = new Message(
         'The property query types lower/greater have been updated to use alphabetic order, no more date-time only. For integer and date-time, use numeric data types.' // @translate
     );
     $messenger->addWarning($message);
-    $message = new PsrMessage(
+    $message = new Message(
         'Update your theme to support new features for facets (active facets, button apply facets with id="apply-facets", list of facet values).' // @translate
     );
     $messenger->addWarning($message);
@@ -298,16 +285,16 @@ WHERE
 SQL;
     $connection->executeStatement($sql);
 
-    $message = new PsrMessage(
-        'It’s now possible to search values similar other ones (via {link}Soundex{link_end}, designed for British English phonetic).', // @translate
-        ['link' => '<a href="https://en.wikipedia.org/wiki/Soundex">', 'link_end' => '</a>']
+    $message = new Message(
+        'It’s now possible to search values similar other ones (via %1$sSoundex%2$s, designed for British English phonetic).', // @translate
+        '<a href="https://en.wikipedia.org/wiki/Soundex">', '</a>'
     );
     $message->setEscapeHtml(false);
     $messenger->addSuccess($message);
 }
 
 if (version_compare($oldVersion, '3.4.7', '<')) {
-    $message = new PsrMessage(
+    $message = new Message(
         'Some new options were added to manage facets.' // @translate
     );
     $messenger->addSuccess($message);
@@ -337,7 +324,7 @@ SQL;
     $hasReference = $module
         && version_compare($module->getIni('version'), '3.4.43', '<');
     if ($hasReference) {
-        $message = new PsrMessage(
+        $message = new Message(
             'It is recommended to upgrade the module "Reference" to improve performance.' // @translate
         );
         $messenger->addWarning($message);
@@ -351,136 +338,4 @@ ALTER TABLE `search_engine` CHANGE `created` `created` datetime NOT NULL DEFAULT
 ALTER TABLE `search_suggester` CHANGE `created` `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `settings`;
 SQL;
     $connection->executeStatement($sql);
-}
-
-if (version_compare($oldVersion, '3.4.14', '<')) {
-    /** @see https://github.com/omeka/omeka-s/pull/2096 */
-    try {
-        $connection->executeStatement('ALTER TABLE `resource` ADD INDEX `idx_public_type_id_title` (`is_public`,`resource_type`,`id`,`title` (190));');
-    } catch (\Exception $e) {
-        // Index exists.
-    }
-    try {
-        $connection->executeStatement('ALTER TABLE `value` ADD INDEX `idx_public_resource_property` (`is_public`,`resource_id`,`property_id`);');
-    } catch (\Exception $e) {
-        // Index exists.
-    }
-
-    /** @see https://github.com/omeka/omeka-s/pull/2105 */
-    try {
-        $connection->executeStatement('ALTER TABLE `resource` ADD INDEX `is_public` (`is_public`);');
-    } catch (\Exception $e) {
-        // Index exists.
-    }
-    try {
-        $connection->executeStatement('ALTER TABLE `value` ADD INDEX `is_public` (`is_public`);');
-    } catch (\Exception $e) {
-        // Index exists.
-    }
-    try {
-        $connection->executeStatement('ALTER TABLE `site_page` ADD INDEX `is_public` (`is_public`);');
-    } catch (\Exception $e) {
-        // Index exists.
-    }
-
-    $settings->set('advancedsearch_index_batch_edit', $settings->get('advancedsearch_disable_index_batch_edit') ? 'none' : 'sync');
-    $settings->delete('advancedsearch_disable_index_batch_edit');
-
-    $message = new PsrMessage(
-        'A new settings allows to skip indexing after a batch process because an issue can occurs in some cases.' // @translate
-    );
-    $messenger->addWarning($message);
-}
-
-if (version_compare($oldVersion, '3.4.15', '<')) {
-    $sql = <<<'SQL'
-DELETE FROM `site_setting`
-WHERE `id` = "advancedsearch_restrict_used_terms";
-SQL;
-    $connection->executeStatement($sql);
-
-    $message = new PsrMessage(
-        'The performance was improved in many places, in particular for large databases.' // @translate
-    );
-    $messenger->addSuccess($message);
-
-    $message = new PsrMessage(
-        'It is now possible to order results by a list of ids with argument "sort_by=ids".' // @translate
-    );
-    $messenger->addSuccess($message);
-}
-
-if (version_compare($oldVersion, '3.4.16', '<')) {
-    $message = new PsrMessage(
-        'It is now possible to do a standard search with a sub-query, for example to get all items with creators born in 1789.' // @translate
-    );
-    $messenger->addSuccess($message);
-}
-
-if (version_compare($oldVersion, '3.4.19', '<')) {
-    // Repeated because of an issue in previous version.
-    $settings->delete('advancedsearch_restrict_used_terms');
-    $sql = <<<'SQL'
-DELETE FROM `site_setting`
-WHERE `id` = "advancedsearch_restrict_used_terms";
-SQL;
-    $connection->executeStatement($sql);
-}
-
-if (version_compare($oldVersion, '3.4.20', '<')) {
-    $message = new PsrMessage(
-        'When full text is managed in alto files, it is now possible to search full text or record only.' // @translate
-    );
-    $messenger->addSuccess($message);
-}
-
-if (version_compare($oldVersion, '3.4.21', '<')) {
-    $message = new PsrMessage(
-        'It is now possible to search resources with duplicated values to help curation.' // @translate
-    );
-    $messenger->addSuccess($message);
-
-    $message = new PsrMessage(
-        'The speed of the derivative forms were improved and can be called directly from the search config with option "variant". Upgrade your theme if it was customized.' // @translate
-    );
-    $messenger->addSuccess($message);
-}
-
-if (version_compare($oldVersion, '3.4.22', '<')) {
-    // Check themes that use old view helpers "FacetActive", "FacetCheckbox" and
-    // "FacetLink".
-    $checks = [
-        'facetActive' => [
-            "'facetActive'",
-            '"facetActive"',
-            '>facetActive(',
-            '$facetActive(',
-        ],
-        'facetCheckbox' => [
-            "'facetCheckbox'",
-            '"facetCheckbox"',
-            '>facetCheckbox(',
-            '$facetCheckbox(',
-        ],
-        'facetLink' => [
-            "'facetLink'",
-            '"facetLink"',
-            '>facetLink(',
-            '$facetLink(',
-        ],
-    ];
-    $manageModuleAndResources = $this->getManageModuleAndResources();
-    $results = [];
-    foreach ($checks as $name => $strings) {
-        $results[$name] = $manageModuleAndResources->checkStringsInFiles($strings, 'themes/*/view/search/*');
-    }
-    $result = array_filter($results);
-    if ($result) {
-        $result = array_map('array_values', array_map('array_unique', $result));
-        $message = new PsrMessage(
-            'View helpers "FacetActive", "FacetCheckbox" and "FacetLink" and associate theme files were removed in favor of plural view helpers. Check your theme if you customized it. Matching files: {json}', // @translate
-            ['json' => json_encode($result, 448)]
-        );
-        throw new \Omeka\Module\Exception\ModuleCannotInstallException((string) $message->setTranslator($translator));
-    }
 }

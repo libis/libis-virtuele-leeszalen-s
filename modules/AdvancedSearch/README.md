@@ -59,46 +59,44 @@ Added fields are:
 Moreover, it adds new search query operator for properties (some are available
 only via api, not in the advanced search form for now):
 
-- Values:
-    - `eq`/`neq`: is or is not exactly (default Omeka)
-    - `in`/`nin`: contains or does not contains (default Omeka)
-    - `sw`/`nsw`: starts or does not start with
-    - `ew`/`new`: ends or does not end with
-    - `near`/`nnear`: is or is not similar to (algorithm [Soundex], based on British English phonetic)
-    - `list`/`nlist`: is or is not in list (api only)
-- Resources:
-    - `res`/`nres`: has resource or has no resource (default Omeka)
-    - `resq`/`nresq`: is or is not resource matching query
-- Linked resources:
-    - `lex`/`nlex`: is or is not a linked resource
-    - `lres`/`nlres`: is or is not linked with resource #id
-    - `lkq`/`nlkq`: is or is not linked with resources matching query
-- Count:
-    - `ex`/`nex`: has any value or has no value (default Omeka)
-    - `exs`/`nexs`: has or has not a single value
-    - `exm`/`nexm`: has or has not multiple values
-- Data Type:
-    - `tp`/`ntp`: has or has not main type (literal-like, resource-like, uri-like)
-    - `tpl`/`ntpl`: has or has not type literal-like
-    - `tpr`/`ntpr`: has or has not type resource-like
-    - `tpu`/`ntpu`: has or has not type uri-like
-    - `dtp`/`ndtp`: has or has not data type
-- Comparisons (api only):
-    - `gt`: greater than
-    - `gte`: greater than or equal
-    - `lte`: lower than or equal
-    - `lt`: lower than
-- Curation:
-    - `dup` and variants: has duplicate values, linked resources, uris, types and languages
-      The variants allows to check duplicate for simple values only, linked
-      resources only, uris only, including or not types or languages.
+- `exs`: has a single value
+- `nexs`: has not a single value
+- `exm`: has multiple values
+- `nexm`: has not multiple values
+- `list`: is in list
+- `nlist`: is not in list
+- `sw`: starts with
+- `nsw`: does not start with
+- `ew`: ends with
+- `new`: does not end with
+- `near`: is similar to (algorithm [Soundex], based on British English phonetic)
+- `nnear`: is not similar to
+- `tp`: has main type (literal-like, resource-like, uri-like)
+- `ntp`: has not main type (literal-like, resource-like, uri-like)
+- `tpl`: has type literal-like
+- `ntpl`: has not type literal-like
+- `tpr`: has type resource-like
+- `ntpr`: has not type resource-like
+- `tpu`: has type uri-like
+- `ntpu`: has not type uri-like
+- `dtp`: has data type
+- `ndtp`: has not data type
+- `lex`: is a linked resource
+- `nlex`: is not a linked resource
+- `lres`: is linked with resource #id
+- `nlres`: is not linked with resource #id
+- `gt`: greater than
+- `gte`: greater than or equal
+- `lte`: lower than or equal
+- `lt`: lower than
+- exclude one or multiple properties (except title)
 
 __Warning__: With the internal sql engine, comparisons are mysql comparisons, so
 alphabetic ones. They works for string and four digit years and standard dates,
 not for numbers nor variable dates.
 
 Furthermore:
-- the search can exclude one or more properties (except title).
+
 - search in multiple properties at a time, for example `dcterms:creator or dcterms:contributor are equal to value "Anonymous"`.
 - search resources without without template, class, item set, site and owner.
   This feature is included directly in the advanced search form in each select.
@@ -109,8 +107,6 @@ Furthermore:
   "and property dcterms:subject equals 'subject' with datatype 'customvocab:1'".
 - search no item set, no class, no template, no owner or no site. To search
   missing value, use `0`, for example `item_set_id=0`.
-- sort by a list of ids with `sort_by=ids`. The list of ids can be set in keys
-  `id` or `sort_ids` as an array or as a comma-separated list.
 
 Finally, an option allows to display only the used properties and classes in the
 advanced search form, with chosen-select.
@@ -118,8 +114,6 @@ advanced search form, with chosen-select.
 
 Installation
 ------------
-
-This module is dependant of module [Common], that should be installed first.
 
 The module uses an external library [jQuery-Autocomplete], so use the release
 zip to install it, or use and init the source.
@@ -139,7 +133,7 @@ the module to `AdvancedSearch`, and go to the root module, and run:
 composer install --no-dev
 ```
 
-See general end user documentation for [installing a module].
+See general end user documentation for [Installing a module].
 
 ### Optional dependencies
 
@@ -194,13 +188,12 @@ To create a new config for a page with a search engine, follow these steps.
        search engine.
        With the internal adapter, the fields `item_set_id`, `resource_class_id`,
        and `resource_template_id` display a select by default. You may have to
-       use `Omeka/Select`, `Omeka/MultiCheckbox`, `Thesaurus`, or variants to
-       get option values automatically.
+       use `Omeka/Select`, `Omeka/MultiCheckbox`, or variants to get option
+       values automatically.
        Note that some indexers may have fields that seem duplicated, but they
        aren’t: some of them allow to prepare search engines and some other
        facets or sort indexes. Some of them may be used for all uses. This is
-       not the case for the internal indexer, that is a simpler search engine
-       based on the omeka sql database.
+       not the case for the internal indexer, that is a simpler search engine.
        For example, you can use `dcterms:type`, `dcterms:subject`, `dcterms:creator`,
        `dcterms:date`, `dcterms:spatial`, `dcterms:language` and `dcterms:rights`
        as facets, and `dcterms:title`, `dcterms:date`, and `dcterms:creator` as
@@ -402,18 +395,30 @@ be some minutes with Solr, according to your configuration).
 TODO
 ----
 
-- [ ] Inverse logic in response: fill all results as flat and group them by resource type only if needed.
-- [ ] Update to remove features integrated in Omeka S v 3.1 and remove dead fixes for Omeka S beta.
-- [x] The override of a search query with "property" should be called even with "initialize = false" in the api.
-- [x] Remove distinction between advanced and basic form: they are just a list of elements.
+- [ ] Inverse logic in response: fill all results as flat and group them by
+      resource type only if needed.
+- [ ] Update to remove features integrated in Omeka S v 3.1 and remove dead fixes
+      for Omeka S beta.
+- [x] The override of a search query with "property" should be called even with
+      "initialize = false" in the api.
+- [x] Remove distinction between advanced and basic form: they are just a list
+      of elements.
 - [ ] Create advanced search form (in particular prepared select) only not used (add an option or argument?).
-- [ ] Simplify the form with https://docs.laminas.dev/laminas-form/v3/form-creation/creation-via-factory/ and js, storing the whole form one time. See UserProfile too.
-- [ ] Normalize the url query with a true standard: Solr? Omeka S?, at the choice of the admin or the developer of the forms and queriers? Avoid to multiply query formats. Probably replace the custom one by the Solr/Lucene one.
-- [x] Genericize the name of the fields of be able for internal querier to use or convert the fields names.
-- [ ] Make the search arguments groupable to allow smart facets: always display all facets from the original queries, with "or" between facets of the same group, and "and" between groups. Require that the core api allows groups.
+- [ ] Simplify the form with https://docs.laminas.dev/laminas-form/v3/form-creation/creation-via-factory/
+      and js, storing the whole form one time. See UserProfile too.
+- [ ] Normalize the url query with a true standard: Solr? Omeka S?, at the
+      choice of the admin or the developer of the forms and queriers? Avoid to
+      multiply query formats. Probably replace the custom one by the Solr/Lucene one.
+- [x] Genericize the name of the fields of be able for internal querier to use
+      or convert the fields names.
+- [ ] Make the search arguments groupable to allow smart facets: always display all
+      facets from the original queries, with "or" between facets of the same group,
+      and "and" between groups. Require that the core api allows groups.
 - [ ] Integrate auto-suggestion (or short list) to any field.
 - [ ] Use the Laminas config (ini/json/xml) to allow complex form (see User Profile)
-- [ ] Use the standard view with tabs and property selector for the page creation, in order not to limit it to Dublin Core terms. The tabs may be "Filters", "Facets", and "Sort".
+- [ ] Use the standard view with tabs and property selector for the page creation,
+      in order not to limit it to Dublin Core terms. The tabs may be "Filters",
+      "Facets", and "Sort".
 - [x] Create an internal index (see Omeka Classic) or use the fulltext feature
 - [-] Move all code related to Internal (sql) into another module? No.
 - [ ] Allow to remove an index without removing pages.
@@ -423,22 +428,20 @@ TODO
 - [ ] Update index when item pool of a site change.
 - [ ] Genericize and move the value extractor from module SearchSolr to this module.
 - [ ] Improve the check of presence of an item in sites for real time indexation.
-- [x] Updated index in batch, not one by one.
+- [ ] Updated index in batch, not one by one.
 - [ ] Add an option to replace the default Omeka search form.
 - [ ] Improve the internal autosuggester to return the list of next words when space.
 - [x] Use a "or" for facets of each group.
 - [ ] Manage pagination when item set is redirected to search.
 - [ ] Reorder items in items set (from module Next, see MvcListeners).
-- [ ] Integrate the override in a way a direct call to adapter->buildQuery() can work with advanced property search (see Reference and some other modules).
+- [ ] Integrate the override in a way a direct call to adapter->buildQuery() can
+      work with advanced property search (see Reference and some other modules).
 - [ ] Rename search config "name" by "title" or "label".
 - [ ] Add hidden query to site settings.
 - [ ] DateRange field (_dr) may not appear in the type of index in mapping.
 - [ ] Use omeka selects option values by default for classes, templates, item sets, sites.
-- [ ] Factorize and separate config, form and adapter.
 - [ ] Create index for Soundex and non-English algorithms.
 - [ ] Remove SearchingForm?
-- [ ] Restructure form config: separate form and results and allows to mix them, in particular to get multiple form (quick, simple) with same results, or different facets (facets by item sets or main results).
-- [ ] Allow to config the names of the form variants: simple, quick, basic, etc.
 
 
 Warning
@@ -498,7 +501,7 @@ Copyright
 See commits for full list of contributors.
 
 * Copyright BibLibre, 2016-2017 (see [BibLibre])
-* Copyright Daniel Berthereau, 2017-2024 (see [Daniel-KM])
+* Copyright Daniel Berthereau, 2017-2023 (see [Daniel-KM])
 * Copyright Tomas Kirda 2017 (library jQuery-Autocomplete)
 
 This module is a merge of features from the deprecated modules [Advanced Search Plus],
@@ -517,9 +520,8 @@ for the future digital library [Corpus du Louvre].
 [Search Solr]: https://gitlab.com/Daniel-KM/Omeka-S-module-SearchSolr
 [SearchSolr]: https://gitlab.com/Daniel-KM/Omeka-S-module-SearchSolr
 [Soundex]: https://en.wikipedia.org/wiki/Soundex
-[installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
+[Installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
 [this patch]: https://github.com/omeka/omeka-s/pull/1519/files
-[Common]: https://gitlab.com/Daniel-KM/Omeka-S-module-Common
 [jQuery-Autocomplete]: https://github.com/devbridge/jQuery-Autocomplete
 [Reference]: https://gitlab.com/Daniel-KM/Omeka-S-module-Reference
 [Advanced Search Plus]: https://gitlab.com/Daniel-KM/Omeka-S-module-AdvancedSearchPlus

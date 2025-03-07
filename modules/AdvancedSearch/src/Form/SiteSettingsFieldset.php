@@ -2,7 +2,7 @@
 
 namespace AdvancedSearch\Form;
 
-use Common\Form\Element as CommonElement;
+use AdvancedSearch\Form\Element as AdvancedSearchElement;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
 use Omeka\Settings\AbstractSettings;
@@ -46,14 +46,40 @@ class SiteSettingsFieldset extends Fieldset
             $this->defaultSearchFields[$key] = $defaultSearchField['label'] ?? $key;
         }
 
+        $selectAllTerms = $this->settings->get('advancedsearch_restrict_used_terms', false);
         $searchFields = $this->settings->get('advancedsearch_search_fields') ?: $defaultSelectedFields;
 
         $this
             ->setAttribute('id', 'advanced-search')
             ->setOption('element_groups', $this->elementGroups)
             ->add([
+                'name' => 'advancedsearch_note_core',
+                'type' => AdvancedSearchElement\Note::class,
+                'options' => [
+                    'element_group' => 'search',
+                    'text' => 'Core advanced search page', // @translate
+                ],
+                'attributes' => [
+                    'style' => 'font-weight: bold; font-style: italic; margin: 0 0 16px;',
+                ],
+            ])
+            /** @deprecated Since Omeka v3.1 */
+            ->add([
+                'name' => 'advancedsearch_restrict_used_terms',
+                'type' => Element\Checkbox::class,
+                'options' => [
+                    'element_group' => 'search',
+                    'label' => 'Restrict to used properties and resources classes', // @translate
+                    'info' => 'If checked, restrict the list of properties and resources classes to the used ones in advanced search form.', // @translate
+                ],
+                'attributes' => [
+                    'id' => 'advancedsearch_restrict_used_terms',
+                    'value' => $selectAllTerms,
+                ],
+            ])
+            ->add([
                 'name' => 'advancedsearch_search_fields',
-                'type' => CommonElement\OptionalMultiCheckbox::class,
+                'type' => AdvancedSearchElement\OptionalMultiCheckbox::class,
                 'options' => [
                     'element_group' => 'search',
                     'label' => 'Display only following fields', // @translate
@@ -67,8 +93,19 @@ class SiteSettingsFieldset extends Fieldset
             ])
 
             ->add([
+                'name' => 'advancedsearch_note_page',
+                'type' => AdvancedSearchElement\Note::class,
+                'options' => [
+                    'element_group' => 'advanced_search',
+                    'text' => 'Module search pages', // @translate
+                ],
+                'attributes' => [
+                    'style' => 'font-weight: bold; font-style: italic; margin: 16px 0;',
+                ],
+            ])
+            ->add([
                 'name' => 'advancedsearch_main_config',
-                'type' => CommonElement\OptionalSelect::class,
+                'type' => AdvancedSearchElement\OptionalSelect::class,
                 'options' => [
                     'element_group' => 'advanced_search',
                     'label' => 'Default search page', // @translate
@@ -81,7 +118,7 @@ class SiteSettingsFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'advancedsearch_configs',
-                'type' => CommonElement\OptionalMultiCheckbox::class,
+                'type' => AdvancedSearchElement\OptionalMultiCheckbox::class,
                 'options' => [
                     'element_group' => 'advanced_search',
                     'label' => 'Available search pages', // @translate

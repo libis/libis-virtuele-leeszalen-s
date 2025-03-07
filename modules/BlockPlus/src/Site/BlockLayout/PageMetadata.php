@@ -10,6 +10,9 @@ use Omeka\Entity\SitePageBlock;
 use Omeka\Site\BlockLayout\AbstractBlockLayout;
 use Omeka\Stdlib\ErrorStore;
 
+/**
+ * @todo Deprecated some features available since Omeka S v4.1.
+ */
 class PageMetadata extends AbstractBlockLayout
 {
     public function getLabel()
@@ -42,7 +45,7 @@ class PageMetadata extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['blockplus']['block_settings']['pageMetadata'];
         $blockFieldset = \BlockPlus\Form\PageMetadataFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         if (is_array($data['tags'])) {
             $data['tags'] = implode(', ', $data['tags']);

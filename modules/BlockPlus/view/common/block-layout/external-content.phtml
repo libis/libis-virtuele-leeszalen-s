@@ -2,10 +2,8 @@
 /**
  * @var \Laminas\View\Renderer\PhpRenderer $this
  * @var \Omeka\Api\Representation\SitePageBlockRepresentation $block
- * @var string $heading
  * @var array $embeds
  * @var string $html
- * @var string $alignmentClass
  * @var string $showTitleOption
  * @var string $captionPosition
  * @var string $linkText
@@ -19,11 +17,8 @@ $hyperlink = $plugins->get('hyperlink');
 ?>
 
 <div class="block external-content media-text">
-    <?php if (!empty($heading)): ?>
-    <h2><?= $escape($heading) ?></h2>
-    <?php endif; ?>
 
-<div class="<?= $alignmentClass . ' captions-' . $captionPosition ?> media file">
+<div class="<?= ' captions-' . $captionPosition ?> media file">
     <div class="embeds attachments">
 <?php foreach ($embeds as $embed): ?>
     <div class="item resource">
@@ -36,7 +31,7 @@ $hyperlink = $plugins->get('hyperlink');
             $height = $data['height'];
             $title = empty($data['title']) ? $url : $data['title'];
             echo sprintf(
-                '<img src="%s" width="%s" height="%s" alt="%s">',
+                '<img loading="lazy" src="%s" width="%s" height="%s" alt="%s">',
                 $escapeAttr($url),
                 $escapeAttr($width),
                 $escapeAttr($height),

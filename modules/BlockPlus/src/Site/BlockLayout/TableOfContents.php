@@ -8,8 +8,9 @@ use Omeka\Api\Representation\SitePageBlockRepresentation;
 use Omeka\Api\Representation\SitePageRepresentation;
 use Omeka\Api\Representation\SiteRepresentation;
 use Omeka\Site\BlockLayout\AbstractBlockLayout;
+use Omeka\Site\BlockLayout\TemplateableBlockLayoutInterface;
 
-class TableOfContents extends AbstractBlockLayout
+class TableOfContents extends AbstractBlockLayout implements TemplateableBlockLayoutInterface
 {
     /**
      * The default partial view script.
@@ -33,7 +34,16 @@ class TableOfContents extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['blockplus']['block_settings']['tableOfContents'];
         $blockFieldset = \BlockPlus\Form\TableOfContentsFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        // Force default value to 1.
+        $depthValue = 1;
+        if ($block) {
+            $blockDepth = (int) $block->dataValue('depth');
+            if ($blockDepth > 1) {
+                $depthValue = $blockDepth;
+            }
+        }
+
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         $dataForm = [];
         foreach ($data as $key => $value) {
@@ -46,12 +56,14 @@ class TableOfContents extends AbstractBlockLayout
         return $view->formCollection($fieldset);
     }
 
-    public function render(PhpRenderer $view, SitePageBlockRepresentation $block)
+    public function render(PhpRenderer $view, SitePageBlockRepresentation $block, $templateViewScript = self::PARTIAL_NAME)
     {
         $view->pageViewModel->setVariable('displayNavigation', false);
-        $nav = $block->page()->site()->publicNav();
 
-        /** @var \Laminas\View\Helper\Navigation $container */
+        /**
+         * @var \Laminas\View\Helper\Navigation $container
+         */
+        $nav = $block->page()->site()->publicNav();
         $container = $nav->getContainer();
         if ($block->dataValue('root')) {
             $activePage = ['page' => $container, 'depth' => 0];
@@ -78,17 +90,17 @@ class TableOfContents extends AbstractBlockLayout
             $subNav = new Navigation([]);
         }
 
-        $depth = (int) $block->dataValue('depth', 1);
+        // Don't use dataValue's default here; we need to handle empty/non-numerics anyway
+        $depth = (int) $block->dataValue('depth');
+        if ($depth < 1) {
+            $depth = 1;
+        }
 
         $vars = [
             'block' => $block,
-            'heading' => $block->dataValue('heading'),
             'subNav' => $subNav,
             'maxDepth' => $depth - 1,
         ];
-        $template = $block->dataValue('template', self::PARTIAL_NAME);
-        return $template !== self::PARTIAL_NAME && $view->resolver($template)
-            ? $view->partial($template, $vars)
-            : $view->partial(self::PARTIAL_NAME, $vars);
+        return $view->partial($templateViewScript, $vars);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace AdvancedSearch\Form\Admin;
 
-use Common\Form\Element as CommonElement;
+use AdvancedSearch\Form\Element as AdvancedSearchElement;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
 use Laminas\Form\Form;
@@ -55,7 +55,7 @@ class SearchSuggesterForm extends Form
         $this
             ->add([
                 'name' => 'o:engine',
-                'type' => CommonElement\OptionalSelect::class,
+                'type' => AdvancedSearchElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Search engine', // @translate
                     'value_options' => $this->getEnginesOptions(),
@@ -81,6 +81,14 @@ class SearchSuggesterForm extends Form
 
         $isInternal = (bool) $this->getOption('is_internal');
         if (!$isInternal) {
+            $fieldset
+                ->add([
+                    'name' => 'note',
+                    'type' => AdvancedSearchElement\Note::class,
+                    'options' => [
+                        'text' => 'Only the internal adapter can have settings for now. For external suggesters, use the direct url in the search config.', // @translate
+                    ],
+                ]);
             return;
         }
 
@@ -100,7 +108,7 @@ class SearchSuggesterForm extends Form
             ])
             ->add([
                 'name' => 'mode_index',
-                'type' => CommonElement\OptionalRadio::class,
+                'type' => AdvancedSearchElement\OptionalRadio::class,
                 'options' => [
                     'label' => 'Mode to index values', // @translate
                     'value_options' => [
@@ -119,7 +127,7 @@ class SearchSuggesterForm extends Form
             ])
             ->add([
                 'name' => 'mode_search',
-                'type' => CommonElement\OptionalRadio::class,
+                'type' => AdvancedSearchElement\OptionalRadio::class,
                 'options' => [
                     'label' => 'Mode to search suggestions', // @translate
                     'value_options' => [
@@ -162,7 +170,7 @@ class SearchSuggesterForm extends Form
             ])
             ->add([
                 'name' => 'fields',
-                'type' => CommonElement\OptionalSelect::class,
+                'type' => AdvancedSearchElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Limit query to specific fields', // @translate
                     'info' => 'With the internal search engine, it is not recommended to use full text content.', // @translate
@@ -178,7 +186,7 @@ class SearchSuggesterForm extends Form
             ])
             ->add([
                 'name' => 'excluded_fields',
-                'type' => CommonElement\OptionalSelect::class,
+                'type' => AdvancedSearchElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Exclude fields', // @translate
                     'info' => 'Allow to skip the full text content, that may be useless for suggestions.', // @translate

@@ -1,36 +1,39 @@
 <?php
 $translate = $this->plugin('translate');
-?>
-<div class="preview-block">
-
-<?php if ($this->heading): ?>
-<h2><?php echo $this->heading; ?></h2>
-<?php endif; ?>
-
-<ul class="resource-list preview">
-<?php
-$headingTerm = $this->siteSetting('browse_heading_property_term');
-$bodyTerm = $this->siteSetting('browse_body_property_term');
-foreach ($this->resources as $resource):
-    $heading = $headingTerm ? $resource->value($headingTerm, ['default' => $translate('[Untitled]')]) : $resource->displayTitle();
-    $body = $bodyTerm ? $resource->value($bodyTerm) : $resource->displayDescription();
-?>
-    <li class="<?php echo $this->resourceType; ?> resource">
-        <?php echo $resource->linkRaw($this->thumbnail($resource, 'medium', ['title' => $heading])); ?>
-        <h4><?php echo $resource->link($heading); ?></h4>
-        <?php if ($body): ?>
-        <div class="description"><?php echo $body; ?></div>
-        <?php endif; ?>
-    </li>
-<?php endforeach; ?>
-</ul>
-
-<?php
-if ($this->linkText):
-    echo $this->hyperlink($this->linkText, $this->url(
-        'site/resource', ['controller' => $this->resourceType, 'action' => 'browse'], ['query' => $this->query], true
-    ));
-endif;
+$latest = $this->resources[0];
 ?>
 
-</div>
+<section class="section">
+    <div class="container">
+        <div class="row">
+            <?php if($html):?>
+            <div class="col-md-4">
+                <div class="card card-gray" style="margin-bottom: 0px;">
+                    <div class="card-body">
+                    <?php if ($this->heading): ?>
+                    <div class="card-title">
+                        <h2><?php echo $this->heading; ?></h2>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($this->html): ?>
+                        <?php echo $this->html; ?>
+                    <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif;?>
+            <div class="col-md-<?php if($html):?>8<?php else:?>12<?php endif;?>">
+                <?php if($latest->displayTitle()):?>
+                <h2><?php echo $latest->displayTitle();?></h2>
+                <?php endif;?>
+                <?php
+                $itemMedia = $latest->media();
+                $sortedMedia = $this->sortMedia($itemMedia);
+                if (isset($sortedMedia['lightMedia'])):
+                    echo $this->lightGalleryOutput($sortedMedia['lightMedia']);
+                endif;
+                ?>
+            </div>
+        </div>
+    </div>
+</section>

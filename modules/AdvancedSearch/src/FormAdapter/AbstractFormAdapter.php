@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 /*
- * Copyright Daniel Berthereau, 2019-2023
+ * Copyright Daniel Berthereau, 2019-2024
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -29,42 +29,146 @@
 
 namespace AdvancedSearch\FormAdapter;
 
+use AdvancedSearch\Api\Representation\SearchConfigRepresentation;
 use AdvancedSearch\Mvc\Controller\Plugin\SearchResources;
 use AdvancedSearch\Query;
 
 abstract class AbstractFormAdapter implements FormAdapterInterface
 {
-    protected $form;
+    /**
+     * @var string|null
+     */
+    protected $configFormClass = null;
 
-    abstract public function getLabel(): string;
+    /**
+     * @var string|null
+     */
+    protected $formClass = null;
 
-    public function setForm(?\Laminas\Form\Form $form): \AdvancedSearch\FormAdapter\FormAdapterInterface
+    /**
+     * @var string|null
+     */
+    protected $formPartial = null;
+
+    /**
+     * @var string|null
+     */
+    protected $formPartialHeaders = null;
+
+    /**
+     * @var string
+     */
+    protected $label;
+
+    /**
+     * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation
+     */
+    protected $searchConfig;
+
+    public function setSearchConfig(?SearchConfigRepresentation $searchConfig): FormAdapterInterface
     {
-        $this->form = $form;
+        $this->searchConfig = $searchConfig;
         return $this;
-    }
-
-    public function getForm(): ?\Laminas\Form\Form
-    {
-        return $this->form;
-    }
-
-    public function getFormPartialHeaders(): ?string
-    {
-        return null;
-    }
-
-    public function getFormPartial(): ?string
-    {
-        return null;
     }
 
     public function getConfigFormClass(): ?string
     {
-        return null;
+        return $this->configFormClass;
     }
 
-    public function toQuery(array $request, array $formSettings): \AdvancedSearch\Query
+    public function getLabel(): string
+    {
+        return $this->label;
+    }
+
+    public function getFormClass(): ?string
+    {
+        return $this->formClass;
+    }
+
+    public function getFormPartialHeaders(): ?string
+    {
+        return $this->formPartialHeaders;
+    }
+
+    public function getFormPartial(): ?string
+    {
+        return $this->formPartial;
+    }
+
+    public function getForm(array $options = []): ?\Laminas\Form\Form
+    {
+        if (!$this->formClass || !$this->searchConfig) {
+            return null;
+        }
+        $formElementManager = $this->searchConfig->getServiceLocator()
+            ->get('FormElementManager');
+        if (!$formElementManager->has($this->formClass)) {
+            return null;
+        }
+        $options['search_config'] = $this->searchConfig;
+        return $formElementManager
+            ->get($this->formClass, $options)
+            ->setAttribute('method', 'GET');
+    }
+
+    public function renderForm(array $options = []): string
+    {
+        $options += [
+            'template' => null,
+            'skip_form_action' => false,
+            'skip_partial_headers' => false,
+            'variant' => null,
+        ];
+
+        $form = $this->getForm($options);
+        if (!$form) {
+            return '';
+        }
+
+        /** @var \Laminas\View\HelperPluginManager $plugins  */
+        $plugins = $this->searchConfig->getServiceLocator()->get('ViewHelperManager');
+        /** @var \Laminas\View\Helper\Partial $partial */
+        $partial = $plugins->get('partial');
+        // In rare cases, view may be missing.
+        $view = $partial->getView();
+
+        if (!$options['template']) {
+            $options['template'] = $this->getFormPartial();
+            if (!$options['template']) {
+                return '';
+            }
+        }
+
+        if ($view && !$view->resolver($options['template'])) {
+            return '';
+        }
+
+        if (!$options['skip_partial_headers']) {
+            $partialHeaders = $this->getFormPartialHeaders();
+            if ($partialHeaders) {
+                // No output.
+                $partial($partialHeaders, [
+                    'searchConfig' => $this->searchConfig,
+                ] + $options);
+            }
+        }
+
+        if (empty($options['skip_form_action'])) {
+            $isAdmin = $plugins->get('status')->isAdminRequest();
+            $formActionUrl = $isAdmin
+                ? $this->searchConfig->adminSearchUrl()
+                : $this->searchConfig->siteUrl();
+            $form->setAttribute('action', $formActionUrl);
+        }
+
+        return $partial($options['template'], [
+            'searchConfig' => $this->searchConfig,
+            'form' => $form,
+        ] + $options);
+    }
+
+    public function toQuery(array $request, array $formSettings): Query
     {
         $query = new Query;
 
@@ -130,7 +234,16 @@ abstract class AbstractFormAdapter implements FormAdapterInterface
             $name = (string) $name;
             switch ($name) {
                 case 'q':
-                    $query->setQuery($request['q']);
+                    $query->setQuery($value);
+                    continue 2;
+
+                case 'rft':
+                    // Two values: record only or all (record and full text).
+                    // There is only one full text search index in internal
+                    // querier, but inversely a specific index for Solr, so it
+                    // is managed via a specific filter via the adapter.
+                    // TODO Add a specific index for full text in the internal database, so it will be a normal filter.
+                    $query->setRecordOrFullText($value);
                     continue 2;
 
                 // Special fields of the main form and internal adapter are
@@ -308,6 +421,30 @@ abstract class AbstractFormAdapter implements FormAdapterInterface
                     }
                     break;
 
+                case 'thesaurus':
+                    if (!$checkAvailableField($name)) {
+                        continue 2;
+                    }
+
+                    if (is_string($value)
+                        || $isSimpleList($value)
+                    ) {
+                        continue 2;
+                    }
+
+                    foreach ($value as $field => $vals) {
+                        if (!$checkAvailableField($field)) {
+                            continue;
+                        }
+                        if (!is_string($vals) && !$isSimpleList($vals)) {
+                            continue;
+                        }
+                        foreach ($flatArray($vals) as $val) {
+                            $query->addFilterQuery($field, $val, 'res');
+                        }
+                    }
+                    break;
+
                 default:
                     if (!$checkAvailableField($name)) {
                         continue 2;
@@ -324,9 +461,10 @@ abstract class AbstractFormAdapter implements FormAdapterInterface
                         // TODO Don't check form, but settings['filters'] with field = name and type.
                         // TODO Simplify these checks (or support multi-values anywhere).
                         $valueArray = $flatArray($value);
-                        if ($this->form
-                            && $this->form->has($name)
-                            && ($element = $this->form->get($name)) instanceof \Laminas\Form\Element\Text
+                        $form = $this->getForm(['skip_values' => true]);
+                        if ($form
+                            && $form->has($name)
+                            && ($element = $form->get($name)) instanceof \Laminas\Form\Element\Text
                         ) {
                             if ($element instanceof \AdvancedSearch\Form\Element\TextExact
                                 || $element instanceof \AdvancedSearch\Form\Element\MultiText

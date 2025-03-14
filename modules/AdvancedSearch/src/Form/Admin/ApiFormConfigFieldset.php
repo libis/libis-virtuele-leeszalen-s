@@ -2,8 +2,8 @@
 
 namespace AdvancedSearch\Form\Admin;
 
-use AdvancedSearch\Form\Element as AdvancedSearchElement;
-use AdvancedSearch\View\Helper\EasyMeta;
+use Common\Form\Element as CommonElement;
+use Common\Stdlib\EasyMeta;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
 use Omeka\Form\Element as OmekaElement;
@@ -11,7 +11,7 @@ use Omeka\Form\Element as OmekaElement;
 class ApiFormConfigFieldset extends Fieldset
 {
     /**
-     * @var \AdvancedSearch\View\Helper\EasyMeta
+     * @var \Common\Stdlib\EasyMeta
      */
     protected $easyMeta;
 
@@ -66,7 +66,7 @@ class ApiFormConfigFieldset extends Fieldset
             ->get('metadata')
             ->add([
                 'name' => 'id',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Internal id', // @translate
                     'value_options' => $availableFields,
@@ -80,7 +80,7 @@ class ApiFormConfigFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'is_public',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Is Public', // @translate
                     'value_options' => $availableFields,
@@ -94,7 +94,7 @@ class ApiFormConfigFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'owner_id',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Owner id', // @translate
                     'value_options' => $availableFields,
@@ -108,7 +108,7 @@ class ApiFormConfigFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'site_id',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Site id', // @translate
                     'value_options' => $availableFields,
@@ -122,7 +122,7 @@ class ApiFormConfigFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'created',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Created', // @translate
                     'value_options' => $availableFields,
@@ -136,7 +136,7 @@ class ApiFormConfigFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'modified',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Modified', // @translate
                     'value_options' => $availableFields,
@@ -150,7 +150,7 @@ class ApiFormConfigFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'resource_class_label',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Resource class label', // @translate
                     'value_options' => $availableFields,
@@ -164,7 +164,7 @@ class ApiFormConfigFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'resource_class_id',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Resource class id', // @translate
                     'value_options' => $availableFields,
@@ -178,7 +178,7 @@ class ApiFormConfigFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'resource_template_id',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Resource template id', // @translate
                     'value_options' => $availableFields,
@@ -192,7 +192,7 @@ class ApiFormConfigFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'item_set_id',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Item set id', // @translate
                     'value_options' => $availableFields,
@@ -206,7 +206,7 @@ class ApiFormConfigFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'is_open',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Is open', // @translate
                     'value_options' => $availableFields,
@@ -220,7 +220,7 @@ class ApiFormConfigFieldset extends Fieldset
             ])
             ->add([
                 'name' => 'is_open',
-                'type' => AdvancedSearchElement\OptionalSelect::class,
+                'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'label' => 'Is open', // @translate
                     'value_options' => $availableFields,
@@ -382,7 +382,7 @@ class ApiFormConfigFieldset extends Fieldset
         return $options;
     }
 
-    public function setEasyMeta($easyMeta): self
+    public function setEasyMeta(EasyMeta $easyMeta): self
     {
         $this->easyMeta = $easyMeta;
         return $this;

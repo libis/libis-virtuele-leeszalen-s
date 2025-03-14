@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 /*
- * Copyright Daniel Berthereau 2018-2023
+ * Copyright Daniel Berthereau 2018-2024
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -111,10 +111,21 @@ class Advanced extends Fieldset
                 'nexm' => 'has not multiple values', // @translate
                 'res' => 'is resource with ID', // @translate
                 'nres' => 'is not resource with ID', // @translate
+                'resq' => 'is resource matching query', // @translate
+                'nresq' => 'is not resource matching query', // @translate
                 'lex' => 'is a linked resource', // @translate
                 'nlex' => 'is not a linked resource', // @translate
                 'lres' => 'is linked with resource with ID', // @translate
                 'nlres' => 'is not linked with resource with ID', // @translate
+                'lkq' => 'is linked with resources matching query', // @translate
+                'nlkq' => 'is not linked with resources matching query', // @translate
+                /*
+                'list',
+                'nlist',
+                'res',
+                'nres',
+                'tp'…,
+                 */
             ];
             if ($joiner && $joinerNot) {
                 unset(
@@ -127,8 +138,10 @@ class Advanced extends Fieldset
                     $operators['nexs'],
                     $operators['nexm'],
                     $operators['nres'],
+                    $operators['nresq'],
                     $operators['nlex'],
-                    $operators['nlres']
+                    $operators['nlres'],
+                    $operators['nlkq']
                 );
             }
             $this

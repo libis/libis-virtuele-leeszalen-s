@@ -2,7 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016-2017
- * Copyright Daniel Berthereau, 2017-2023
+ * Copyright Daniel Berthereau, 2017-2024
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -73,8 +73,6 @@ class SearchController extends AbstractActionController
         $view = new ViewModel([
             // The form is set via searchConfig.
             'searchConfig' => $searchConfig,
-            // "searchPage" is kept to simplify migration.
-            'searchPage' => $searchConfig,
             'site' => $site,
             // Set a default empty query and response to simplify view.
             'query' => new Query,
@@ -83,8 +81,9 @@ class SearchController extends AbstractActionController
 
         $request = $this->params()->fromQuery();
 
-        $form = $searchConfig->form();
-        if ($form) {
+        // Here, only the csrf is needed, if any.
+        $validateForm = (bool) $searchConfig->subSetting('search', 'validate_form');
+        if ($validateForm) {
             // Check csrf issue.
             $request = $this->validateSearchRequest($searchConfig, $request);
             if ($request === false) {
@@ -93,7 +92,9 @@ class SearchController extends AbstractActionController
         }
 
         // The form may be empty for a direct query.
-        $isJsonQuery = !$form;
+        $formAdapter = $searchConfig->formAdapter();
+        $hasForm = $formAdapter ? (bool) $formAdapter->getFormClass() : false;
+        $isJsonQuery = !$hasForm;
 
         // Check if the query is empty and use the default query in that case.
         // So the default query is used only on the search config.
@@ -188,9 +189,7 @@ class SearchController extends AbstractActionController
 
         return $view
             ->setVariables($result['data'], true)
-            ->setVariable('searchConfig', $searchConfig)
-            // "searchPage" is kept to simplify migration.
-            ->setVariable('searchPage', $searchConfig);
+            ->setVariable('searchConfig', $searchConfig);
     }
 
     public function suggestAction()
@@ -422,7 +421,11 @@ class SearchController extends AbstractActionController
     /**
      * Get the request from the query and check it according to the search page.
      *
+     * In fact, only check the csrf, but the csrf is removed from the form in
+     * most of the cases, so it is useless.
+     *
      * @todo Factorize with \AdvancedSearch\Site\BlockLayout\SearchingForm::getSearchRequest()
+     * @todo Clarify process of force validation if it is really useful.
      *
      * @return array|bool
      */
@@ -435,7 +438,9 @@ class SearchController extends AbstractActionController
         // redirection. In that case, there is no csrf element, so no check to
         // do.
         if (array_key_exists('csrf', $request)) {
-            $form = $searchConfig->form();
+            $form = $searchConfig->form([
+                'variant' => 'csrf',
+            ]);
             $form->setData($request);
             if (!$form->isValid()) {
                 $messages = $form->getMessages();

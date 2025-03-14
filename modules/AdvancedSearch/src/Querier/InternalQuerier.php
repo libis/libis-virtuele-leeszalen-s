@@ -4,7 +4,7 @@ namespace AdvancedSearch\Querier;
 
 use AdvancedSearch\Querier\Exception\QuerierException;
 use AdvancedSearch\Response;
-use Omeka\Stdlib\Message;
+use Common\Stdlib\PsrMessage;
 
 class InternalQuerier extends AbstractQuerier
 {
@@ -420,16 +420,20 @@ SQL;
             $req = urldecode(http_build_query(array_filter($req), '', '&', PHP_QUERY_RFC3986));
             $messenger = $plugins->get('messenger');
             if ($this->query->getExcludedFields()) {
-                $message = new Message('The query "%1$s" uses %2$d properties, that is more than the %3$d supported currently. Excluded fields are removed.', // @translate
-                    $req, count($this->args['property']), self::REQUEST_MAX_ARGS);
+                $message = new PsrMessage(
+                    'The query "{query}" uses {count} properties, that is more than the {total} supported currently. Excluded fields are removed.', // @translate
+                    ['query' => $req, 'count' => count($this->args['property']), 'total' => self::REQUEST_MAX_ARGS]
+                );
                 $this->query->setExcludedFields([]);
                 $messenger->addWarning($message);
                 $this->logger->warn($message);
                 return $this->getPreparedQuery();
             }
 
-            $message = new Message('The query "%1$s" uses %2$d properties, that is more than the %3$d supported currently. Request is troncated.', // @translate
-                $req, count($this->args['property']), self::REQUEST_MAX_ARGS);
+            $message = new PsrMessage(
+                'The query "{query}" uses {count} properties, that is more than the {total} supported currently. Request is troncated.', // @translate
+                ['query' => $req, 'count' => count($this->args['property']), 'total' => self::REQUEST_MAX_ARGS]
+            );
             $messenger->addWarning($message);
             $this->logger->warn($message);
             $this->args['property'] = array_slice($this->args['property'], 0, self::REQUEST_MAX_ARGS);
@@ -495,7 +499,11 @@ SQL;
 
         // Full text search is the default Omeka mode.
         // TODO It uses fulltext_search, but when more than 50% results, no results, not understandable by end user (or use boolean mode).
-        $this->args['fulltext_search'] = $q;
+        if ($this->query->getRecordOrFullText() === 'record') {
+            $this->args['search'] = $q;
+        } else {
+            $this->args['fulltext_search'] = $q;
+        }
     }
 
     /**
@@ -621,7 +629,7 @@ SQL;
                     $values = $flatArray($values);
                     $values = is_numeric(reset($values))
                         ? array_filter(array_map('intval', $values))
-                        : $this->listResourceClassIds($values);
+                        : array_values($this->getResourceClassIds($values));
                     $this->args['resource_class_id'] = empty($this->args['resource_class_id'])
                         ? $values
                         : array_merge(is_array($this->args['resource_class_id']) ? $this->args['resource_class_id'] : [$this->args['resource_class_id']], $values);
@@ -631,7 +639,7 @@ SQL;
                     $values = $flatArray($values);
                     $values = is_numeric(reset($values))
                         ? array_filter(array_map('intval', $values))
-                        : $this->listResourceTemplateIds($values);
+                        : array_values($this->getResourceTemplateIds($values));
                     $this->args['resource_template_id'] = empty($this->args['resource_template_id'])
                         ? $values
                         : array_merge(is_array($this->args['resource_template_id']) ? $this->args['resource_template_id'] : [$this->args['resource_template_id']], $values);
@@ -661,7 +669,7 @@ SQL;
                     continue 2;
 
                 default:
-                    $field = $this->getPropertyTerms($field)
+                    $field = $this->getPropertyTerm($field)
                         ?? $multifields[$field]['fields']
                         ?? $this->underscoredNameToTerm($field)
                         ?? null;
@@ -736,7 +744,7 @@ SQL;
             if ($field === 'created' || $field === 'modified') {
                 $argName = 'datetime';
             } else {
-                $field = $this->getPropertyTerms($field)
+                $field = $this->getPropertyTerm($field)
                     ?? $multifields[$field]['fields']
                     ?? $this->underscoredNameToTerm($field)
                     ?? null;
@@ -777,7 +785,7 @@ SQL;
     {
         $multifields = $this->engine->settingAdapter('multifields', []);
         foreach ($filters as $field => $values) {
-            $field = $this->getPropertyTerms($field)
+            $field = $this->getPropertyTerm($field)
                 ?? $multifields[$field]['fields']
                 ?? $this->underscoredNameToTerm($field)
                 ?? null;
@@ -872,9 +880,15 @@ SQL;
         $fields = [];
         foreach ($facets as $facetField => $facetData) {
             $fields[$facetField] = $metadataFieldsToNames[$facetField]
-                ?? $this->getPropertyTerms($facetField)
+                ?? $this->getPropertyTerm($facetField)
                 ?? $multifields[$facetField]['fields']
                 ?? $facetField;
+        }
+
+        // Manage an exception for module ItemSetsTree: search item sets.
+        $hasItemSetsTree = isset($fields['item_sets_tree']);
+        if ($hasItemSetsTree) {
+            $fields['item_sets_tree'] = 'o:item_set';
         }
 
         // Facet counts don't make a distinction by resource type, so they
@@ -919,6 +933,7 @@ SQL;
                 'sort_order' => $facetOrders[$facetOrder]['sort_order'],
                 'filters' => [
                     'languages' => $facetLanguages,
+                    // 'main_types' => [],
                     'datatypes' => [],
                 ],
                 'values' => [],
@@ -932,7 +947,7 @@ SQL;
                 'output' => 'associative',
             ];
 
-            // TODO Make References manages individual options for each field (limit, order, languages, range).
+            // TODO Make References manages individual options for each field (limit, order, languages, range, main data types, data types).
             $values = $references
                 ->setMetadata($fields)
                 ->setQuery($facetData)
@@ -951,15 +966,25 @@ SQL;
                 $isFacetRange = $facets[$facetField]['type'] === 'SelectRange';
                 // Like Solr, get all facet values, so all existing values.
                 /** @see https://solr.apache.org/guide/solr/latest/query-guide/faceting.html */
+                // TODO Remove these double queries for facet range when individual options will be managed.
                 if ($isFacetRange) {
-                    // TODO Remove this double query for facet range when individual options will be managed.
-                    $values = $references
-                        ->setMetadata([$fields[$facetField]])
+                    $localValues = $references
+                        ->setMetadata([$facetField => $fields[$facetField]])
                         ->setQuery($facetData)
                         ->setOptions($optionsFacetRange)
                         ->list();
+                } elseif (!empty($facets[$facetField]['options']) && $facets[$facetField]['options'] !== ['value', 'uri', 'resource']) {
+                    $localOptions = $options;
+                    $localOptions['filters']['main_types'] = $facets[$facetField]['options'];
+                    $localValues = $references
+                        ->setMetadata([$facetField => $fields[$facetField]])
+                        ->setQuery($facetData)
+                        ->setOptions($localOptions)
+                        ->list();
+                } else {
+                    $localValues = $values;
                 }
-                foreach ($values[$facetField]['o:references'] ?? [] as $value => $count) {
+                foreach ($localValues[$facetField]['o:references'] ?? [] as $value => $count) {
                     if (empty($facetCountsByField[$facetField][$value])) {
                         $facetCountsByField[$facetField][$value] = [
                             'value' => $value,
@@ -1121,103 +1146,42 @@ SQL;
     }
 
     /**
-     * Get one or more property ids by JSON-LD terms or by numeric ids.
+     * Get property ids by JSON-LD terms or by numeric ids.
      *
-     * @return array Associative array of ids by term.
+     * @return array Associative array of property ids by terms or ids.
      */
-    protected function getPropertyIds($termsOrIds = null)
+    protected function getPropertyIds($termsOrIds = null): array
     {
-        return $this->services->get('ViewHelperManager')->get('easyMeta')->propertyIds($termsOrIds);
+        return $this->services->get('EasyMeta')->propertyIds($termsOrIds);
     }
 
     /**
-     * Get one or more property terms by JSON-LD terms or by numeric ids.
+     * Get a property term by JSON-LD term or by numeric id.
+     *
+     * @return string|null The property term or null.
      */
-    protected function getPropertyTerms($termsOrIds = null)
+    protected function getPropertyTerm($termOrId): ?string
     {
-        return $this->services->get('ViewHelperManager')->get('easyMeta')->propertyTerms($termsOrIds);
+        return $this->services->get('EasyMeta')->propertyTerm($termOrId);
     }
 
     /**
      * Convert a list of terms into a list of resource class ids.
      *
-     * @see \Reference\Mvc\Controller\Plugin\References::listResourceClassIds()
-     *
-     * @param array $values
-     * @return array Only values that are terms are converted into ids, the
-     * other ones are removed.
+     * @return array Associative array of resource class ids by terms or ids.
      */
-    protected function listResourceClassIds(array $values): array
+    protected function getResourceClassIds($termsOrIds = null): array
     {
-        return array_values(array_intersect_key($this->getResourceClassIds(), array_fill_keys($values, null)));
+        return $this->services->get('EasyMeta')->resourceClassIds($termsOrIds);
     }
 
     /**
-     * Get all resource class ids by term.
+     * Convert a list of labels into a list of resource template ids.
      *
-     * @see \Reference\Mvc\Controller\Plugin\References::getResourceClassIds()
-     *
-     * @return array Associative array of ids by term.
+     * @return array Associative array of resource template ids by labels or ids.
      */
-    protected function getResourceClassIds(): array
+    protected function getResourceTemplateIds($labelsOrIds = null): array
     {
-        static $resourceClasses;
-
-        if (is_null($resourceClasses)) {
-            /** @var \Doctrine\DBAL\Connection $connection */
-            $connection = $this->services->get('Omeka\Connection');
-            $qb = $connection->createQueryBuilder();
-            $qb
-                ->select(
-                    'CONCAT(vocabulary.prefix, ":", resource_class.local_name) AS term',
-                    'resource_class.id AS id'
-                )
-                ->from('resource_class', 'resource_class')
-                ->innerJoin('resource_class', 'vocabulary', 'vocabulary', 'resource_class.vocabulary_id = vocabulary.id')
-                ->orderBy('term', 'asc')
-            ;
-            $resourceClasses = array_map('intval', $connection->executeQuery($qb)->fetchAllKeyValue());
-        }
-
-        return $resourceClasses;
-    }
-
-    /**
-     * Convert a list of terms into a list of resource template ids.
-     *
-     * @param array $values
-     * @return array Only values that are labels are converted into ids, the
-     * other ones are removed.
-     */
-    protected function listResourceTemplateIds(array $values): array
-    {
-        return array_values(array_intersect_key($this->getResourceTemplateIds(), array_fill_keys($values, null)));
-    }
-
-    /**
-     * Get all resource template ids by label.
-     *
-     * @return array Associative array of ids by label.
-     */
-    protected function getResourceTemplateIds(): array
-    {
-        static $resourceTemplates;
-
-        if (is_null($resourceTemplates)) {
-            /** @var \Doctrine\DBAL\Connection $connection */
-            $connection = $this->services->get('Omeka\Connection');
-            $qb = $connection->createQueryBuilder();
-            $qb
-                ->select(
-                    'resource_template.label AS label',
-                    'resource_template.id AS id'
-                )
-                ->from('resource_template', 'resource_template')
-                ->orderBy('id', 'asc')
-            ;
-            $resourceTemplates = array_map('intval', $connection->executeQuery($qb)->fetchAllKeyValue());
-        }
-
-        return $resourceTemplates;
+        return $this->services->get('EasyMeta')->resourceTemplateIds($labelsOrIds);
     }
 }

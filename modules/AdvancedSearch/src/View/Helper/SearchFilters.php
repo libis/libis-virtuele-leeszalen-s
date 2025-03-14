@@ -37,6 +37,8 @@ class SearchFilters extends AbstractHelper
 
     /**
      * Render filters from search query, with urls if needed (if set in theme).
+     *
+     * @see \Omeka\View\Helper\SearchFilters::__invoke()
      */
     public function __invoke($partialName = null, ?array $query = null): string
     {
@@ -95,7 +97,7 @@ class SearchFilters extends AbstractHelper
                     if (!is_array($value)) {
                         $value = [$value];
                     }
-                    $filterLabel = $translate('Class');
+                    $filterLabel = $translate('Class'); // @translate
                     foreach ($value as $subKey => $subValue) {
                         if (!is_numeric($subValue)) {
                             continue;
@@ -116,7 +118,8 @@ class SearchFilters extends AbstractHelper
                 // Search values (by property or all)
                 case 'property':
                     $queryTypesLabels = $this->getQueryTypesLabels();
-                    $easyMeta = $plugins->get('easyMeta');
+                    /** @var \Common\Stdlib\EasyMeta $easyMeta */
+                    $easyMeta = $plugins->get('easyMeta')();
                     // TODO The array may be more than zero when firsts are standard (see core too for inverse).
                     $index = 0;
                     foreach ($value as $subKey => $queryRow) {
@@ -149,7 +152,7 @@ class SearchFilters extends AbstractHelper
                             $propertyLabel = [];
                             $properties = is_array($queriedProperties) ? $queriedProperties : [$queriedProperties];
                             foreach ($properties as $property) {
-                                $label = $easyMeta->propertyLabels($property);
+                                $label = $easyMeta->propertyLabel($property);
                                 $propertyLabel[] = $label ? $translate($label) : $translate('Unknown property'); // @translate
                             }
                             $propertyLabel = implode(' ' . $translate('OR') . ' ', $propertyLabel);
@@ -168,6 +171,9 @@ class SearchFilters extends AbstractHelper
                                 $filterLabel = $translate('AND') . ' ' . $filterLabel;
                             }
                         }
+                        if (in_array($queryType, ['resq', 'nresq', 'lkq', 'nlkq']) && !$noValue) {
+                            $value = array_map('urldecode', $value);
+                        }
                         $filters[$filterLabel][$this->urlQuery($key, $subKey)] = $noValue
                             ? $queryTypesLabels[$queryType]
                             : implode(', ', $flatArray($value));
@@ -176,7 +182,7 @@ class SearchFilters extends AbstractHelper
                     break;
 
                 case 'search':
-                    $filterLabel = $translate('Search');
+                    $filterLabel = $translate('Search'); // @translate
                     $filters[$filterLabel][$this->urlQuery($key)] = $value;
                     break;
 
@@ -185,7 +191,7 @@ class SearchFilters extends AbstractHelper
                     if (!is_array($value)) {
                         $value = [$value];
                     }
-                    $filterLabel = $translate('Template');
+                    $filterLabel = $translate('Template'); // @translate
                     foreach ($value as $subKey => $subValue) {
                         if (!is_numeric($subValue)) {
                             continue;
@@ -208,7 +214,30 @@ class SearchFilters extends AbstractHelper
                     if (!is_array($value)) {
                         $value = [$value];
                     }
-                    $filterLabel = $translate('Item set');
+                    $filterLabel = $translate('In item set'); // @translate
+                    foreach ($value as $subKey => $subValue) {
+                        if (!is_numeric($subValue)) {
+                            continue;
+                        }
+                        if ($subValue) {
+                            try {
+                                $filterValue = $api->read('item_sets', $subValue)->getContent()->displayTitle();
+                            } catch (NotFoundException $e) {
+                                $filterValue = $translate('Unknown item set'); // @translate
+                            }
+                        } else {
+                            $filterValue = $translate('[none]'); // @translate
+                        }
+                        $filters[$filterLabel][$this->urlQuery($key, $subKey)] = $filterValue;
+                    }
+                    break;
+
+                // Search not item set
+                case 'not_item_set_id':
+                    if (!is_array($value)) {
+                        $value = [$value];
+                    }
+                    $filterLabel = $translate('Not in item set'); // @translate
                     foreach ($value as $subKey => $subValue) {
                         if (!is_numeric($subValue)) {
                             continue;
@@ -228,7 +257,7 @@ class SearchFilters extends AbstractHelper
 
                 // Search user
                 case 'owner_id':
-                    $filterLabel = $translate('User');
+                    $filterLabel = $translate('User'); // @translate
                     if ($value) {
                         try {
                             $filterValue = $api->read('users', $value)->getContent()->name();
@@ -246,7 +275,7 @@ class SearchFilters extends AbstractHelper
                     if (!is_array($value)) {
                         $value = [$value];
                     }
-                    $filterLabel = $translate('Site');
+                    $filterLabel = $translate('Site'); // @translate
                     foreach ($value as $subKey => $subValue) {
                         if (!is_numeric($subValue)) {
                             continue;
@@ -274,14 +303,14 @@ class SearchFilters extends AbstractHelper
 
                 case 'datetime':
                     $queryTypesDatetime = [
-                        'gt' => $translate('after'),
-                        'gte' => $translate('after or on'),
-                        'eq' => $translate('on'),
-                        'neq' => $translate('not on'),
-                        'lte' => $translate('before or on'),
-                        'lt' => $translate('before'),
-                        'ex' => $translate('has any date / time'),
-                        'nex' => $translate('has no date / time'),
+                    'gt' => $translate('after'), // @translate
+                        'gte' => $translate('after or on'), // @translate
+                        'eq' => $translate('on'), // @translate
+                        'neq' => $translate('not on'), // @translate
+                        'lte' => $translate('before or on'), // @translate
+                        'lt' => $translate('before'), // @translate
+                        'ex' => $translate('has any date / time'), // @translate
+                        'nex' => $translate('has no date / time'), // @translate
                     ];
 
                     $value = $this->query['datetime'];
@@ -292,7 +321,9 @@ class SearchFilters extends AbstractHelper
                         $type = $queryRow['type'];
                         $datetimeValue = $queryRow['value'];
 
-                        $fieldLabel = $field === 'modified' ? $translate('Modified') : $translate('Created');
+                        $fieldLabel = $field === 'modified'
+                            ? $translate('Modified') // @translate
+                            : $translate('Created'); // @translate
                         $filterLabel = $fieldLabel . ' ' . $queryTypesDatetime[$type];
                         if ($engine > 0) {
                             $joiners = [
@@ -308,9 +339,10 @@ class SearchFilters extends AbstractHelper
                     break;
 
                 case 'is_public':
-                    $filters[$translate('Visibility')][$this->urlQuery($key)] = $value
-                        ? $translate('Public')
-                        : $translate('Private');
+                    $filterLabel = $translate('Visibility'); // @translate
+                    $filters[$filterLabel][$this->urlQuery($key)] = $value
+                        ? $translate('Public') // @translate
+                        : $translate('Not public'); // @translate
                     break;
 
                 case 'resource_class_term':
@@ -321,10 +353,10 @@ class SearchFilters extends AbstractHelper
                     break;
 
                 case 'has_media':
-                    $filterLabel = $translate('Has media'); // @translate
+                    $filterLabel = $translate('Media presence'); // @translate
                     $filters[$filterLabel][$this->urlQuery($key)] = $value
-                        ? $translate('yes') // @translate
-                        : $translate('no'); // @translate
+                        ? $translate('Has media')  // @translate
+                        : $translate('Has no media'); // @translate
                     break;
 
                 case 'has_original':
@@ -344,6 +376,27 @@ class SearchFilters extends AbstractHelper
                 case 'media_types':
                     $filterLabel = $translate('Media types'); // @translate
                     foreach ($flatArray($value) as $subKey => $subValue) {
+                        $filters[$filterLabel][$this->urlQuery($key, $subKey)] = $subValue;
+                    }
+                    break;
+
+                case 'id':
+                    $filterLabel = $translate('ID'); // @translate
+                    // Avoid a strict type issue, so convert ids as string.
+                    $ids = $value;
+                    if (is_int($ids)) {
+                        $ids = [(string) $ids];
+                    } elseif (is_string($ids)) {
+                        $ids = strpos($ids, ',') === false ? [$ids] : explode(',', $ids);
+                    } elseif (!is_array($ids)) {
+                        $ids = [];
+                    }
+                    $ids = array_map('trim', $ids);
+                    $ids = array_filter($ids, 'strlen');
+                    $value = $ids;
+                    // TODO Keep style like omeka?
+                    // $filters[$filterLabel][$this->urlQuery($key)] = implode(', ', $ids);
+                    foreach ($value as $subKey => $subValue) {
                         $filters[$filterLabel][$this->urlQuery($key, $subKey)] = $subValue;
                     }
                     break;
@@ -371,6 +424,10 @@ class SearchFilters extends AbstractHelper
      * @param string|int $key
      * @param string|int|null $subKey
      * @return string
+     *
+     * Copy:
+     * @see \AdvancedSearch\View\Helper\SearchFilters::urlQuery()
+     * @see \AdvancedSearch\View\Helper\SearchingFilters::urlQuery()
      */
     protected function urlQuery($key, $subKey = null): string
     {
@@ -383,20 +440,5 @@ class SearchFilters extends AbstractHelper
         return $newQuery
             ? $this->baseUrl . '?' . http_build_query($newQuery, '', '&', PHP_QUERY_RFC3986)
             : $this->baseUrl;
-    }
-
-    /**
-     * Get one or more property ids by JSON-LD terms or by numeric ids.
-     *
-     * @param array|int|string|null $termsOrIds One or multiple ids or terms.
-     * @return int[] The property ids matching terms or ids, or all properties
-     * by terms.
-     */
-    protected function getPropertyIds($termsOrIds = null): array
-    {
-        if (is_scalar($termsOrIds)) {
-            $termsOrIds = [$termsOrIds];
-        }
-        return $this->view->easyMeta()->propertyIds($termsOrIds);
     }
 }

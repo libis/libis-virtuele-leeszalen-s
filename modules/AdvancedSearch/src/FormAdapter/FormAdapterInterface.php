@@ -2,7 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016
- * Copyright Daniel Berthereau, 2018-2023
+ * Copyright Daniel Berthereau, 2018-2024
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -30,13 +30,30 @@
 
 namespace AdvancedSearch\FormAdapter;
 
+use AdvancedSearch\Api\Representation\SearchConfigRepresentation;
+
 interface FormAdapterInterface
 {
     public function getLabel(): string;
 
-    public function setForm(?\Laminas\Form\Form $form): \AdvancedSearch\FormAdapter\FormAdapterInterface;
+    public function setSearchConfig(?SearchConfigRepresentation $searchConfig): \AdvancedSearch\FormAdapter\FormAdapterInterface;
 
-    public function getForm(): ?\Laminas\Form\Form;
+    public function getConfigFormClass(): ?string;
+
+    /**
+     * Get the search form.
+     *
+     * @param array $options Options are same than renderForm() except template.
+     *   Default keys:
+     *   - skip_form_action (bool): Don't set form action, so use the current page.
+     *   - skip_partial_headers (bool): Skip partial headers.
+     *   - skip_values: Does not init form element values (quicker results).
+     *   - variant: Name of a variant of the form, "quick" or "simple", or
+     *     "csrf" (internal use).
+     *     To use a variant allows a quicker process than a template alone.
+     *   Other options are passed to the partial.
+     */
+    public function getForm(array $options = []): ?\Laminas\Form\Form;
 
     /**
      * The form class to use to build the search form, if any.
@@ -52,7 +69,24 @@ interface FormAdapterInterface
 
     public function getFormPartial(): ?string;
 
-    public function getConfigFormClass(): ?string;
+    /**
+     * Render the form.
+     *
+     * @param array $options Options are same than getForm() except template.
+     *   Default keys:
+     *   - template (string): Use a specific template instead of the default one.
+     *     This is the template of the form, not the main template of the search
+     *     config.
+     *   - skip_form_action (bool): Don't set form action, so use the current page.
+     *   - skip_partial_headers (bool): Skip partial headers.
+     *   - skip_values: Does not init form element values (quicker results).
+     *   - variant: Name of a variant of the form, "quick" or "simple", or
+     *     "csrf" (internal use).
+     *     To use a variant allows a quicker process than a template alone.
+     *   Other options are passed to the partial.
+     * @return string Html form.
+     */
+    public function renderForm(array $options = []): string;
 
     /**
      * Convert a user query from a form into a search query via a form mapping.

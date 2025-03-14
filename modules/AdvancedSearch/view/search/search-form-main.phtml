@@ -3,7 +3,6 @@
  * @var \Laminas\View\Renderer\PhpRenderer $this
  * @var \AdvancedSearch\Form\MainSearchForm $form
  * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig
- * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchPage Alias of $searchConfig
  */
 
 // Scripts are loaded via an event on view.layout and can be managed in search-form-main-header.phtml.
@@ -23,21 +22,23 @@ if (!$formId) {
 $reset = null;
 $submit = null;
 if ($form->has('reset')) {
-    $reset = $form->get('reset')->setAttribute('form', $formId);
+    $reset = $form->get('reset');
     $form->remove('reset');
 }
 if ($form->has('submit')) {
-    $submit = $form->get('submit')->setAttribute('form', $formId);
+    $submit = $form->get('submit');
     $form->remove('submit');
 }
 ?>
 
 <div id="advanced-search-form-wrapper">
     <div id="advanced-search-form">
-        <?= $this->form($form) ?>
+        <?= $this->form()->openTag($form) ?>
+        <?= $this->formCollection($form) ?>
         <div class="search-form-buttons">
             <?= $reset ? $this->formButton($reset) : null ?>
             <?= $submit ? $this->formButton($submit) : null ?>
         </div>
+        <?= $this->form()->closeTag() ?>
     </div>
 </div>

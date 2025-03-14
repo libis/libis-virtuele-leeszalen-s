@@ -4,16 +4,12 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit28c8a70303114100d187309324acbb08
+class ComposerStaticInitb1e7bdbedd3b2c0a78aad8d7cc94f779
 {
-    public static $files = array (
-        'c9d07b32a2e02bc0fc582d4f0c1b56cc' => __DIR__ . '/..' . '/laminas/laminas-servicemanager/src/autoload.php',
-    );
-
     public static $prefixLengthsPsr4 = array (
-        'P' => 
+        'c' => 
         array (
-            'Psr\\Container\\' => 14,
+            'cweagans\\Composer\\' => 18,
         ),
         'O' => 
         array (
@@ -21,7 +17,6 @@ class ComposerStaticInit28c8a70303114100d187309324acbb08
         ),
         'L' => 
         array (
-            'Laminas\\ServiceManager\\' => 23,
             'Laminas\\Feed\\' => 13,
         ),
         'C' => 
@@ -31,17 +26,13 @@ class ComposerStaticInit28c8a70303114100d187309324acbb08
     );
 
     public static $prefixDirsPsr4 = array (
-        'Psr\\Container\\' => 
+        'cweagans\\Composer\\' => 
         array (
-            0 => __DIR__ . '/..' . '/psr/container/src',
+            0 => __DIR__ . '/..' . '/cweagans/composer-patches/src',
         ),
         'OomphInc\\ComposerInstallersExtender\\' => 
         array (
             0 => __DIR__ . '/..' . '/oomphinc/composer-installers-extender/src',
-        ),
-        'Laminas\\ServiceManager\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/laminas/laminas-servicemanager/src',
         ),
         'Laminas\\Feed\\' => 
         array (
@@ -60,9 +51,9 @@ class ComposerStaticInit28c8a70303114100d187309324acbb08
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit28c8a70303114100d187309324acbb08::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit28c8a70303114100d187309324acbb08::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit28c8a70303114100d187309324acbb08::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInitb1e7bdbedd3b2c0a78aad8d7cc94f779::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInitb1e7bdbedd3b2c0a78aad8d7cc94f779::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInitb1e7bdbedd3b2c0a78aad8d7cc94f779::$classMap;
 
         }, null, ClassLoader::class);
     }

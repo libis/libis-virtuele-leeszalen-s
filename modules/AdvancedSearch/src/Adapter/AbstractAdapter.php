@@ -2,7 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016-2017
- * Copyright Daniel Berthereau, 2018-2023
+ * Copyright Daniel Berthereau, 2018-2024
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -45,6 +45,26 @@ abstract class AbstractAdapter implements AdapterInterface
      */
     protected $searchEngine;
 
+    /**
+     * @var string
+     */
+    protected $label;
+
+    /**
+     * @var string
+     */
+    protected $configFieldsetClass = null;
+
+    /**
+     * @var string
+     */
+    protected $indexerClass = null;
+
+    /**
+     * @var string
+     */
+    protected $querierClass = null;
+
     public function setServiceLocator(ServiceLocatorInterface $serviceLocator): AdapterInterface
     {
         $this->services = $serviceLocator;
@@ -60,6 +80,26 @@ abstract class AbstractAdapter implements AdapterInterface
     public function getSearchEngine(): ?SearchEngineRepresentation
     {
         return $this->searchEngine;
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label;
+    }
+
+    public function getConfigFieldset(): ?\Laminas\Form\Fieldset
+    {
+        return $this->configFieldsetClass ? new $this->configFieldsetClass : null;
+    }
+
+    public function getIndexerClass(): string
+    {
+        return $this->indexerClass;
+    }
+
+    public function getQuerierClass(): string
+    {
+        return $this->querierClass;
     }
 
     public function getAvailableFields(): array

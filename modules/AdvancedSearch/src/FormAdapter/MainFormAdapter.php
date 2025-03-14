@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 /*
- * Copyright Daniel Berthereau 2018-2023
+ * Copyright Daniel Berthereau 2018-2024
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -31,23 +31,11 @@ namespace AdvancedSearch\FormAdapter;
 
 class MainFormAdapter extends AbstractFormAdapter implements FormAdapterInterface
 {
-    public function getLabel(): string
-    {
-        return 'Main'; // @translate
-    }
+    protected $formClass = \AdvancedSearch\Form\MainSearchForm::class;
 
-    public function getFormClass(): ?string
-    {
-        return \AdvancedSearch\Form\MainSearchForm::class;
-    }
+    protected $formPartial = 'search/search-form-main';
 
-    public function getFormPartialHeaders(): ?string
-    {
-        return 'search/search-form-main-headers';
-    }
+    protected $formPartialHeaders = 'search/search-form-main-headers';
 
-    public function getFormPartial(): ?string
-    {
-        return 'search/search-form-main';
-    }
+    protected $label = 'Main'; // @translate
 }

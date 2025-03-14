@@ -45,7 +45,7 @@ class SearchingForm extends AbstractBlockLayout
         $defaultSettings = $services->get('Config')['advancedsearch']['block_settings']['searchingForm'];
         $blockFieldset = \AdvancedSearch\Form\SearchingFormFieldset::class;
 
-        $data = $block ? $block->data() + $defaultSettings : $defaultSettings;
+        $data = $block ? ($block->data() ?? []) + $defaultSettings : $defaultSettings;
 
         $dataForm = [];
         foreach ($data as $key => $value) {
@@ -137,7 +137,8 @@ class SearchingForm extends AbstractBlockLayout
             }
 
             $plugins = $block->getServiceLocator()->get('ControllerPluginManager');
-            $result = $plugins->get('searchRequestToResponse')($request, $searchConfig, $site);
+            $searchRequestToResponse = $plugins->get('searchRequestToResponse');
+            $result = $searchRequestToResponse($request, $searchConfig, $site);
             if ($result['status'] === 'success') {
                 $vars = array_replace($vars, $result['data']);
             } elseif ($result['status'] === 'error') {

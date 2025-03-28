@@ -5,6 +5,7 @@ $primary : #004070;
 
 @import "extra";
 @import "slick";
+@import "base";
 
 .wrapper{
   .first{
@@ -85,7 +86,6 @@ $primary : #004070;
    margin-top: auto;
 }
 
-
 #form-search .field-meta{
   label[for=q]{
     font-family: Source Serif Pro,serif;
@@ -157,10 +157,6 @@ $primary : #004070;
 
 .search-results .resource-list.grid .resource { 
   padding-top: 8px !important;
-}
-
-#q{
-  border-radius: 12px 0 0 12px !important;
 }
 
 #submit{

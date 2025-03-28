@@ -83,14 +83,5 @@ class TextBlock extends AbstractBlockLayout
         'block' => $block,
         'attachments' => $block->attachments()
       ]);
-
-      /*return $view->partial('common/block-layout/tiles', [
-          'block' => $block,
-          'attachments' => $attachments,
-          'alignmentClass' => $alignmentClass,
-          'thumbnailType' => $thumbnailType,
-          'link' => $linkType,
-          'showTitleOption' => $showTitleOption,
-      ]);*/
     }
 }

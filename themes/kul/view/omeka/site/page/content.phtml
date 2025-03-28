@@ -18,9 +18,9 @@ foreach ($page->blocks() as $block) {
       if ($credits):
           $lang = $this->lang();
           if($lang == "nl-NL"):
-            echo "<h3 style='subtitle is-4'>Door ".$credits."</h3>";
+            echo "<h3 style='subtitle'>Door ".$credits."</h3>";
           else:
-            echo "<h3 style='subtitle is-4'>By ".$credits."</h3>";
+            echo "<h3 style='subtitle>By ".$credits."</h3>";
           endif;  
       endif;
       echo '</div></section>';      

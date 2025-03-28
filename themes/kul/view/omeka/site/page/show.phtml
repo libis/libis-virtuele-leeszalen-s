@@ -42,7 +42,7 @@ $showPagePagination = $this->siteSetting('show_page_pagination', true);
 <?php //echo $this->sitePagePagination(); ?>
 <?php endif; ?>
 
-<div class="has-text-centered" style="margin-bottom:2rem;">
+<div class="has-text-centered" >
   <?php if($previous && ($this->pageMetadata('type',$previous) == 'exhibit_page' || $this->pageMetadata('type',$previous) == 'exhibit')):?>
     <a class="button is-outlined" href="<?php echo $previous->url();?>">Vorige</a>
   <?php endif;?>

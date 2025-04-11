@@ -22,7 +22,7 @@ $second = $this->resourcePageBlocks($item, 'second')->hasBlocks();
     text-decoration: none;
   }
 </style>
-<div class="container">
+<div class="container item-page">
   <div >
     <div id="portal-breadcrumbs" class="breadcrumbs" style="display:block;">
       <span class="breadcrumb-item">
@@ -35,7 +35,13 @@ $second = $this->resourcePageBlocks($item, 'second')->hasBlocks();
         </span>
       <?php else:?>
         <span class="breadcrumb-item">
-          <a href="<?php echo $site->url()."/".$translate('search');?>"><?= $translate('Search') ?></a>          
+          <?php if(str_contains($site->url(), "film-photonovel")): ?>
+            <a href="<?php echo $site->url()."/".$translate('search') ."_FPN";?>"><?= $translate('Search') ?></a>  
+          <?php elseif(str_contains($site->url(), "exofficina")): ?>
+            <a href="<?php echo $site->url()."/".$translate('search') ."_EO";?>"><?= $translate('Search') ?></a>  
+          <?php elseif(str_contains($site->url(), "graphicnovels")): ?>
+            <a href="<?php echo $site->url()."/".$translate('search') ."_GN";?>"><?= $translate('Search') ?></a>  
+          <?php endif; ?>        
         </span>    
       <?php endif;?>
       <span class="breadcrumb-item active">
@@ -51,7 +57,7 @@ $second = $this->resourcePageBlocks($item, 'second')->hasBlocks();
   <div class="left-content col-md-3">
       <?php echo $this->resourcePageBlocks($item, 'left')->getBlocks(); ?>
     </div>
-    <div class="main-content col-md-6">
+    <div class="main-content image-wrapper col-md-6">
       <?php echo $this->resourcePageBlocks($item, 'main')->getBlocks(); ?>
     </div>
     <div class="right-content col-md-3">

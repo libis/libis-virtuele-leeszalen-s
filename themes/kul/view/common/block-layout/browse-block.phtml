@@ -6,6 +6,7 @@ $locale = array(
   "nl-NL" => "nl",
 );
 $lang = $locale[$this->lang()];
+$sitename = $block->page()->site()->url();
 
 ?>
 <section class="section browse-block">
@@ -68,15 +69,20 @@ $lang = $locale[$this->lang()];
           $url = $resource->url();
         ?>
         <div class="col-xs-12 col-md-<?= $block->dataValue('columns'); ?>">
+          <?php if(str_contains($sitename, "film-photonovel")): ?>
+            <a href="<?= $sitename."/".$translate('search') ."_FPN?facet%5Bdcterms_ispartof%5D%5B0%5D=" .$resource->title();?>">
+          <?php elseif(str_contains($sitename, "exofficina")): ?>
+            <a href="<?= $sitename."/".$translate('search') ."_EO?facet%5Bdcterms_ispartof%5D%5B0%5D=" .$resource->title();?>">
+          <?php elseif(str_contains($sitename, "graphicnovels")): ?>
+            <a href="<?= $sitename."/".$translate('search') ."_GN?facet%5Bdcterms_ispartof%5D%5B0%5D=" .$resource->title();?>">
+          <?php endif; ?>  
           <div class="card card-gray">
             <?php if($mediaurl):?>
-              <a href="<?php echo $resource->url();?>">
               <div class="card-img-top" style="background-image: url(<?php echo  $mediaurl;?>)">&nbsp;</div>
-              </a>
             <?php endif;?>
             <div class="card-body">
               <h2>
-                <a href="<?php echo $resource->url();?>"><?php echo $resource->value('dcterms:title');?></a>
+                <?php echo $resource->value('dcterms:title');?>
               </h2>
               <?php if($resource->value('dcterms:date')):?>
                 <h6><?php echo date('d-m-Y',strtotime($resource->value('dcterms:date')));?></h6>
@@ -95,6 +101,7 @@ $lang = $locale[$this->lang()];
               <?php endif; ?>
             </div>
           </div>
+          </a>
         </div>
       <?php endforeach; ?>
       </div>

@@ -37,6 +37,7 @@ $plugins = $this->getHelperPluginManager();
 $url = $plugins->get('url');
 $api = $plugins->get('api');
 $escape = $plugins->get('escapeHtml');
+$assetUrl = $plugins->get('assetUrl');
 $translate = $plugins->get('translate');
 $thumbnail = $plugins->get('thumbnail');
 
@@ -48,7 +49,18 @@ $siteSlug = $this->params()->fromRoute('site-slug')
     // If no default site, get the first public one.
     ?? (($site = $api->searchOne('sites', ['id' => $plugins->get('setting')('default_site'), 'sort_by' => 'is_public', 'sort_order' => 'desc'])->getContent()) ? $site->slug() : null);
 
-$this->headLink()->prependStylesheet($this->assetUrl('css/reference.css', 'Reference'));
+$script = <<<'JS'
+function referenceToggleMode(viewType) {
+    const element = document.querySelector('#reference-headings.reference-grid');
+    element.className = element.className.replace(' mode-grid', '').replace(' mode-list', '') + ' ' + viewType;
+}
+JS;
+$this->headLink()
+    ->prependStylesheet($assetUrl('css/reference.css', 'Reference'))
+    ->prependStylesheet($assetUrl('css/reference-grid.css', 'Reference'));
+
+$this->headScript()
+    ->appendScript($script);
 
 $mapResourcesControllers = ['resources' => 'resource', 'items' => 'item', 'item_sets' => 'item-set', 'media' => 'media'];
 $controllerName = $mapResourcesControllers[$options['resource_name']];
@@ -113,22 +125,26 @@ if (!$options['raw'] || ($listByMax && !$options['raw_sub'])) {
     $templateUrlSingle = str_replace($tempPlaceholder, '{reference}', $url('site/resource-id', ['site-slug' => $siteSlug, 'controller' => $controllerName, 'id' => $tempPlaceholder], false));
 }
 
+$labelSeeResources = '<span class="reference-see">' . $translate('See resources') . '</span>';
+
 if ($options['raw']) {
     if ($options['total']) {
         $template .= '<li class="reference-record">{thumbnail}{reference_text}{reference_total}{recursive}</li>' . PHP_EOL;
         $replaceBase['{reference_total}'] = '';
-        $referenceTotal = ' (%d)';
+        $referenceTotal = ' ' . $translate('(%d resources)');
+        $referenceTotalSingle = ' ' . $translate('(%d resource)');
     } else {
         $template .= '<li class="reference-record">{thumbnail}{reference_text}{recursive}</li>' . PHP_EOL;
     }
 } else {
     $replaceBase['{reference_url}'] = '';
     if ($options['total']) {
-        $template .= '<li class="reference-record"><a href="{reference_url}">{thumbnail}<span class="reference-label">{reference_text}</span></a>{reference_total}{recursive}</li>' . PHP_EOL;
+        $template .= '<li class="reference-record"><a href="{reference_url}">{thumbnail}<span class="reference-label">{reference_text}</span>{reference_total}' . $labelSeeResources . '</a>{recursive}</li>' . PHP_EOL;
         $replaceBase['{reference_total}'] = '';
-        $referenceTotal = ' <span class="reference-total"> (%d)</span>';
+        $referenceTotal = ' <span class="reference-total"> ' . $translate('(%d resources)') . '</span>';
+        $referenceTotalSingle = ' <span class="reference-total"> ' . $translate('(%d resource)') . '</span>';
     } else {
-        $template .= '<li class="reference-record"><a href="{reference_url}">{thumbnail}<span class="reference-label">{reference_text}</span></a>{recursive}</li>' . PHP_EOL;
+        $template .= '<li class="reference-record"><a href="{reference_url}">{thumbnail}<span class="reference-label">{reference_text}</span>' . $labelSeeResources . '</a>{recursive}</li>' . PHP_EOL;
     }
     if (!$options['custom_url']) {
         // Prepare the custom url one time with the original query as the base of the url,
@@ -226,7 +242,12 @@ if ($options['skiplinks']):
 </div>
 <?php endif; ?>
 
-<ul id="reference-headings" class="references-list">
+<div class="reference-tools">
+    <button type="button" class="mode-list" onclick="referenceToggleMode('mode-list')"><?= $translate('List') ?></button>
+    <button type="button" class="mode-grid" onclick="referenceToggleMode('mode-grid')"><?= $translate('Grid') ?></button>
+</div>
+
+<ul id="reference-headings" class="references-list reference-grid mode-grid">
     <?php
 
     $referenceUrl = '';
@@ -307,7 +328,7 @@ if ($options['skiplinks']):
 
         // Can be null when references are set directly.
         if ($options['total'] && $referenceNumber && @$referenceData['total']) {
-            $replace['{reference_total}'] = sprintf($referenceTotal, $referenceData['total']);
+            $replace['{reference_total}'] = sprintf($referenceData['total'] <= 1 ? $referenceTotalSingle : $referenceTotal, $referenceData['total']);
         }
 
         // To set the thumbnail is slow, because the resource should be loaded.

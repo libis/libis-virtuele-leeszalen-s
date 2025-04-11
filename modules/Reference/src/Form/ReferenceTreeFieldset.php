@@ -2,25 +2,23 @@
 
 namespace Reference\Form;
 
+use Common\Form\Element as CommonElement;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
 use Omeka\Form\Element as OmekaElement;
 
 class ReferenceTreeFieldset extends Fieldset
 {
+    /**
+     * List of search configs  when module Advanced Search is used.
+     *
+     * @var array
+     */
+    protected $searchConfigs = [];
+
     public function init(): void
     {
         $this
-            ->add([
-                'name' => 'o:block[__blockIndex__][o:data][heading]',
-                'type' => Element\Text::class,
-                'options' => [
-                    'label' => 'Block title', // @translate
-                ],
-                'attributes' => [
-                    'id' => 'reference-tree-heading',
-                ],
-            ])
             ->add([
                 'name' => 'o:block[__blockIndex__][o:data][fields]',
                 'type' => OmekaElement\PropertySelect::class,
@@ -118,10 +116,25 @@ Asia
                 ],
             ])
             ->add([
+                'name' => 'o:block[__blockIndex__][o:data][search_config]',
+                'type' => Element\Select::class,
+                'options' => [
+                    'label' => 'Link to browse or search engine', // @translate
+                    'info' => 'This option is useful when the module Advanced Search is used.', // @translate
+                    'value_options' => [
+                        'default' => 'Search config of the site', // @translate
+                    ] + $this->searchConfigs,
+                    'empty_option' => '',
+                ],
+                'attributes' => [
+                    'id' => 'reference-tree-search_config',
+                ],
+            ])
+            ->add([
                 'name' => 'o:block[__blockIndex__][o:data][link_to_single]',
                 'type' => Element\Checkbox::class,
                 'options' => [
-                    'label' => 'Link to single records', // @translate
+                    'label' => 'Direct link for single records', // @translate
                     'info' => 'When a reference has only one item, link to it directly instead of to the items/browse page.', // @translate
                 ],
                 'attributes' => [
@@ -132,7 +145,7 @@ Asia
                 'name' => 'o:block[__blockIndex__][o:data][custom_url]',
                 'type' => Element\Checkbox::class,
                 'options' => [
-                    'label' => 'Custom url for single', // @translate
+                    'label' => 'Custom url for single records', // @translate
                     'info' => 'May be set with modules such Clean Url or Ark. May slow the display when there are many single references.', // @translate
                 ],
                 'attributes' => [
@@ -147,6 +160,17 @@ Asia
                 ],
                 'attributes' => [
                     'id' => 'reference-tree-total',
+                ],
+            ])
+            ->add([
+                'name' => 'o:block[__blockIndex__][o:data][thumbnail]',
+                'type' => CommonElement\ThumbnailTypeSelect::class,
+                'options' => [
+                    'label' => 'Add the thumbnail of the first resource', // @translate
+                    'empty_option' => '',
+                ],
+                'attributes' => [
+                    'id' => 'reference-tree-thumbnail',
                 ],
             ])
             ->add([
@@ -170,22 +194,11 @@ Asia
                     'id' => 'reference-tree-branch',
                 ],
             ]);
+    }
 
-        if (class_exists('BlockPlus\Form\Element\TemplateSelect')) {
-            $this
-                ->add([
-                    'name' => 'o:block[__blockIndex__][o:data][template]',
-                    'type' => \BlockPlus\Form\Element\TemplateSelect::class,
-                    'options' => [
-                        'label' => 'Template to display', // @translate
-                        'info' => 'Templates are in folder "common/block-layout" of the theme and should start with "reference-tree".', // @translate
-                        'template' => 'common/block-layout/reference-tree',
-                    ],
-                    'attributes' => [
-                        'id' => 'reference-tree-template',
-                        'class' => 'chosen-select',
-                    ],
-                ]);
-        }
+    public function setSearchConfigs(array $searchConfigs): self
+    {
+        $this->searchConfigs = $searchConfigs;
+        return $this;
     }
 }

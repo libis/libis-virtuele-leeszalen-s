@@ -11,27 +11,22 @@ class ReferencesFactory implements FactoryInterface
     public function __invoke(ContainerInterface $services, $name, array $options = null)
     {
         $plugins = $services->get('ControllerPluginManager');
-        $api = $plugins->get('api');
-
-        /** @var \Omeka\Module\Manager $moduleManager */
-        $moduleManager = $services->get('Omeka\ModuleManager');
-        $module = $moduleManager->getModule('AdvancedSearch');
-        $hasAdvancedSearch = $module
-            && $module->getState() === \Omeka\Module\Manager::STATE_ACTIVE;
-
         return new References(
-            $services->get('Omeka\EntityManager'),
-            $services->get('Omeka\ApiAdapterManager'),
             $services->get('Omeka\Acl'),
-            $services->get('Omeka\AuthenticationService')->getIdentity(),
-            $api,
+            $services->get('Omeka\ApiAdapterManager'),
+            $services->get('Omeka\ApiManager'),
+            $services->get('Omeka\Connection'),
+            $services->get('Common\EasyMeta'),
+            $services->get('Omeka\EntityManager'),
+            $services->get('Omeka\Logger'),
             $plugins->get('translate'),
-            $this->supportAnyValue($services),
-            $hasAdvancedSearch
+            $services->get('Omeka\AuthenticationService')->getIdentity(),
+            $plugins->has('accessLevel'),
+            $this->supportAnyValue($services)
         );
     }
 
-    protected function supportAnyValue(ContainerInterface $services)
+    protected function supportAnyValue(ContainerInterface $services): bool
     {
         /** @var \Doctrine\DBAL\Connection $connection */
         $connection = $services->get('Omeka\Connection');

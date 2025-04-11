@@ -28,6 +28,11 @@ Installation
 
 See general end user documentation for [installing a module].
 
+This module requires the module [Common], that should be installed first.
+
+If your records contains diacritic letters like É, Ù, etc., it is recommended to
+install the php extension `intl`.
+
 * From the zip
 
 Download the last release [Reference.zip] from the list of releases, and
@@ -37,6 +42,8 @@ uncompress it in the `modules` directory.
 
 If the module was installed from the source, rename the name of the folder of
 the module to `Reference`.
+
+Then install it like any other Omeka module and follow the config instructions.
 
 ### Note for an upgrade from Omeka Classic
 
@@ -58,7 +65,7 @@ necessary to modify the config.
 Usage
 -----
 
-The site settigns allows to select the terms to display. The config is the same
+The site settings allows to select the terms to display. The config is the same
 for the main site pages or in the block form for pages. It is recommended to use
 site pages when possible.
 
@@ -280,6 +287,7 @@ TODO
 - [ ] Use the new table `reference_metadata` when possible.
 - [ ] Simplify queries for aggregated fields (see AdvancedSearch).
 - [ ] Order by years instead of alphabetic.
+- [ ] Get thumbnail url directly from references for performance.
 
 
 Warning
@@ -328,7 +336,7 @@ Copyright
 
 * Copyright William Mayo, 2011
 * Copyright Philip Collins, 2013 ([jQuery tree view])
-* Copyright Daniel Berthereau, 2014-2023 (see [Daniel-KM] on GitLab)
+* Copyright Daniel Berthereau, 2014-2025 (see [Daniel-KM] on GitLab)
 
 This module is inspired from earlier work done by William Mayo (see [pobocks] on
 GitLab) in [Subject Browse], with some ideas from [Metadata Browser] and
@@ -343,7 +351,7 @@ Performance fixes were made for Article 19.
 [Omeka]: https://omeka.org/classic
 [Reference plugin]: https://gitlab.com/Daniel-KM/Omeka-plugin-Reference
 [Reference.zip]: https://gitlab.com/Daniel-KM/Omeka-S-module-Reference/-/releases
-[Installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
+[installing a module]: https://omeka.org/s/docs/user-manual/modules/#installing-modules
 [Api Info]: https://gitlab.com/Daniel-KM/Omeka-S-module-ApiInfo
 [Bulk Edit]: https://gitlab.com/Daniel-KM/Omeka-S-module-BulkEdit
 [Bulk Check]: https://gitlab.com/Daniel-KM/Omeka-S-module-BulkCheck

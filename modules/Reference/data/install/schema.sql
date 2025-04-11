@@ -4,7 +4,7 @@ CREATE TABLE `reference_metadata` (
     `resource_id` INT NOT NULL,
     `value_id` INT NOT NULL,
     `field` VARCHAR(190) NOT NULL,
-    `lang` VARCHAR(255) DEFAULT '' NOT NULL,
+    `lang` VARCHAR(190) DEFAULT '' NOT NULL,
     `is_public` TINYINT(1) DEFAULT '1' NOT NULL,
     `text` LONGTEXT NOT NULL,
     INDEX IDX_971E6F6B89329D25 (`resource_id`),
@@ -12,6 +12,7 @@ CREATE TABLE `reference_metadata` (
     INDEX idx_field (`field`),
     INDEX idx_lang (`lang`),
     INDEX idx_resource_field (`resource_id`, `field`),
+    INDEX idx_is_public (`is_public`),
     INDEX idx_text (`text`(190)),
     PRIMARY KEY(`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB;

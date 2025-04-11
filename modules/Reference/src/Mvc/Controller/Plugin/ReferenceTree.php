@@ -3,30 +3,18 @@
 namespace Reference\Mvc\Controller\Plugin;
 
 use Laminas\Mvc\Controller\Plugin\AbstractPlugin;
-use Omeka\Mvc\Controller\Plugin\Api;
 use Reference\Mvc\Controller\Plugin\References as ReferencesPlugin;
 
 class ReferenceTree extends AbstractPlugin
 {
     /**
-     * @param Api
-     */
-    protected $api;
-
-    /**
      * @param ReferencesPlugin
      */
     protected $references;
 
-    /**
-     * @param Api $api
-     * @param ReferencesPlugin $references
-     */
     public function __construct(
-        Api $api,
         ReferencesPlugin $references
     ) {
-        $this->api = $api;
         $this->references = $references;
     }
 
@@ -111,9 +99,7 @@ class ReferenceTree extends AbstractPlugin
      */
     public function convertFlatLevelsToTree(array $levels): string
     {
-        $tree = array_map(function ($v, $k) {
-            return $v ? str_repeat('-', $v) . ' ' . trim($k) : trim($k);
-        }, $levels, array_keys($levels));
+        $tree = array_map(fn ($v, $k) => $v ? str_repeat('-', $v) . ' ' . trim($k) : trim($k), $levels, array_keys($levels));
         return implode("\n", $tree);
     }
 
@@ -177,14 +163,12 @@ class ReferenceTree extends AbstractPlugin
                 $branches[] = $branch;
                 $lowerBranches[] = mb_strtolower($branch);
             }
-            $options['values'] = $lowerBranches;
+            $options['filters']['values'] = $lowerBranches;
         }
         // Simple tree.
         else {
-            $lowerReferences = array_map(function ($v) {
-                return mb_strtolower((string) key($v));
-            }, $referenceLevels);
-            $options['values'] = $lowerReferences;
+            $lowerReferences = array_map(fn ($v) => mb_strtolower((string) key($v)), $referenceLevels);
+            $options['filters']['values'] = $lowerReferences;
         }
         $totals = $this->references->__invoke(['tree' => $options['fields']], $query, $options)->list();
         $totals = isset($totals['tree']) ? $totals['tree']['o:references'] : [];

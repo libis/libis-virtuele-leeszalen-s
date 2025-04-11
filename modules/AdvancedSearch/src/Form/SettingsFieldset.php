@@ -8,6 +8,8 @@ use Laminas\Form\Fieldset;
 
 class SettingsFieldset extends Fieldset
 {
+    use TraitCommonSettings;
+
     /**
      * @var array
      */
@@ -30,6 +32,9 @@ class SettingsFieldset extends Fieldset
         $this
             ->setAttribute('id', 'advanced-search')
             ->setOption('element_groups', $this->elementGroups)
+
+            ->initSearchFields()
+
             ->add([
                 'name' => 'advancedsearch_fulltextsearch_alto',
                 'type' => Element\Checkbox::class,
@@ -47,25 +52,12 @@ class SettingsFieldset extends Fieldset
                 'type' => CommonElement\OptionalSelect::class,
                 'options' => [
                     'element_group' => 'advanced_search',
-                    'label' => 'Default search page (admin)', // @translate
-                    'info' => 'This search engine is used in the admin bar.', // @translate
+                    'label' => 'Default search page in admin side bar', // @translate
                     'value_options' => $this->searchConfigs,
-                    'empty_option' => 'Select the search engine for the admin bar…', // @translate
+                    'empty_option' => 'Select the search engine for the admin side bar…', // @translate
                 ],
                 'attributes' => [
                     'id' => 'advancedsearch_main_config',
-                ],
-            ])
-            ->add([
-                'name' => 'advancedsearch_configs',
-                'type' => CommonElement\OptionalMultiCheckbox::class,
-                'options' => [
-                    'element_group' => 'advanced_search',
-                    'label' => 'Available search pages', // @translate
-                    'value_options' => $this->searchConfigs,
-                ],
-                'attributes' => [
-                    'id' => 'advancedsearch_configs',
                 ],
             ])
             ->add([
@@ -80,27 +72,6 @@ class SettingsFieldset extends Fieldset
                 ],
                 'attributes' => [
                     'id' => 'advancedsearch_api_config',
-                ],
-            ])
-            // TODO Remove this option if there is no issue with async (except multiple search engines).
-            ->add([
-                'name' => 'advancedsearch_index_batch_edit',
-                'type' => CommonElement\OptionalRadio::class,
-                'options' => [
-                    'element_group' => 'advanced_search',
-                    'label' => 'Indexing after a batch edit process', // @translate
-                    'info' => 'On some complex databases, an issue may occur after a batch process.', // @translate
-                    'value_options' => [
-                        // TODO Use async indexation when short batch edit and sync when background batch edit?
-                        // 'auto' => 'Automatic', // @translate
-                        'sync' => 'Synchronous', // @translate
-                        'async' => 'Asynchronous', // @translate
-                        'integrated' => 'Integrated', // @translate
-                        'none' => 'None', // @translate
-                    ],
-                ],
-                'attributes' => [
-                    'id' => 'advancedsearch_index_batch_edit',
                 ],
             ])
         ;

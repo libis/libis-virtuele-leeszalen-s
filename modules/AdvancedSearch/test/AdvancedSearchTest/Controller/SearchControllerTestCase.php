@@ -15,13 +15,13 @@ abstract class SearchControllerTestCase extends OmekaControllerTestCase
 
         $this->loginAsAdmin();
 
-        $this->setupTestSearchAdapter();
+        $this->setupTestEngineAdapter();
 
         $response = $this->api()->create('search_engines', [
             'o:name' => 'TestIndex',
-            'o:adapter' => 'test',
+            'o:engine_adapter' => 'test',
             'o:settings' => [
-                'resources' => [
+                'resource_types' => [
                     'items',
                     'item_sets',
                 ],
@@ -30,12 +30,18 @@ abstract class SearchControllerTestCase extends OmekaControllerTestCase
         $searchEngine = $response->getContent();
         $response = $this->api()->create('search_configs', [
             'o:name' => 'TestPage',
-            'o:path' => 'test/search',
-            'o:engine' => $searchEngine->id(),
-            'o:form' => 'basic',
+            'o:slug' => 'test/search',
+            'o:search_engine' => [
+                'o:id' => $searchEngine->id(),
+            ],
+            'o:form_adapter' => 'basic',
             'o:settings' => [
-                'facets' => [],
-                'sort_fields' => [],
+                'request' => [],
+                'q' => [],
+                'index' => [],
+                'form' => [],
+                'results' => [],
+                'facet' => [],
             ],
         ]);
         $searchConfig = $response->getContent();
@@ -50,22 +56,22 @@ abstract class SearchControllerTestCase extends OmekaControllerTestCase
         $this->api()->delete('search_engines', $this->searchEngine->id());
     }
 
-    protected function setupTestSearchAdapter(): void
+    protected function setupTestEngineAdapter(): void
     {
-        $serviceLocator = $this->getApplication()->getServiceManager();
-        $adapterManager = $serviceLocator->get('Search\AdapterManager');
+        $services = $this->getApplication()->getServiceManager();
+        $engineAdapterManager = $services->get('AdvancedSearch\EngineAdapterManager');
         $config = [
             'invokables' => [
-                'test' => \AdvancedSearch\Test\Adapter\TestAdapter::class,
+                'test' => \AdvancedSearch\Test\EngineAdapter\TestEnginerAdapter::class,
             ],
         ];
-        $adapterManager->configure($config);
+        $engineAdapterManager->configure($config);
     }
 
     protected function resetApplication(): void
     {
         parent::resetApplication();
 
-        $this->setupTestSearchAdapter();
+        $this->setupTestEngineAdapter();
     }
 }

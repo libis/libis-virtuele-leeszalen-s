@@ -17,6 +17,11 @@ class AbstractFacet extends AbstractHelper
     protected $easyMeta;
 
     /**
+     * @var \Omeka\View\Helper\Logger
+     */
+    protected $logger;
+
+    /**
      * @var \Laminas\View\Helper\Partial
      */
     protected $partialHelper;
@@ -32,11 +37,6 @@ class AbstractFacet extends AbstractHelper
     protected $urlHelper;
 
     /**
-     * @var bool
-     */
-    protected $isTree = false;
-
-    /**
      * @var string
      */
     protected $partial;
@@ -47,9 +47,19 @@ class AbstractFacet extends AbstractHelper
     protected $route = '';
 
     /**
+     * @var \Omeka\Api\Representation\SiteRepresentation
+     */
+    protected $site = null;
+
+    /**
      * @var int
      */
-    protected $siteId;
+    protected $siteId = null;
+
+    /**
+     * @var array
+     */
+    protected $siteLocales = [];
 
     /**
      * @var array
@@ -62,12 +72,16 @@ class AbstractFacet extends AbstractHelper
     protected $queryBase = [];
 
     /**
-     * Create one facet as link, checkbox, select or button.
+     * Create one facet (list of facet values) as link, checkbox, select, etc.
      *
      * @param string|array $facetField Field name or null for active facets.
      * @param array $facetValues Each facet value has two keys: value and count.
-     * May have more for specific facets, like facet range.
+     * May have more data for specific facets, like facet range.
      * For active facets, keys are names and values are list of values.
+     * @param array $options Search config settings for the current facet, that
+     * should contain the main mode and, for some types of facets, the type and
+     * the label or the label of all facets (active facets).
+     * @param bool $asData Return an array instead of the partial.
      * @return string|array
      */
     public function __invoke(?string $facetField, array $facetValues, array $options = [], bool $asData = false)
@@ -77,6 +91,7 @@ class AbstractFacet extends AbstractHelper
         $view = $this->getView();
         $plugins = $view->getHelperPluginManager();
         $this->api = $plugins->get('api');
+        $this->logger = $plugins->get('logger');
         $this->translate = $plugins->get('translate');
         $this->urlHelper = $plugins->get('url');
         $this->easyMeta = $plugins->get('easyMeta')();
@@ -93,23 +108,19 @@ class AbstractFacet extends AbstractHelper
 
         $isSiteRequest = $plugins->get('status')->isSiteRequest();
         if ($isSiteRequest) {
-            $this->siteId = $plugins
-                ->get('Laminas\View\Helper\ViewModel')
+            $this->site = $plugins
+                ->get(\Laminas\View\Helper\ViewModel::class)
                 ->getRoot()
-                ->getVariable('site')
-                ->id();
-        }
-
-        if ($this->isTree) {
-            if ($plugins->has('itemSetsTree')) {
-                $this->itemSetsTree = $plugins->get('itemSetsTree');
-            }
-            if ($plugins->has('thesaurus')) {
-                $this->thesaurus = $plugins->get('thesaurus')();
-            }
-            if (!$this->itemSetsTree && !$this->thesaurus) {
-                $this->isTree = false;
-            }
+                ->getVariable('site');
+            $this->siteId = $this->site->id();
+            $locale = $plugins->get('siteSetting')('locale');
+            $this->siteLocales = array_unique([
+                $locale,
+                substr($locale, 0, 2),
+                // It should be null, but it is deprecated in resource->value().
+                // null,
+                '',
+            ]);
         }
 
         unset($this->queryBase['page']);
@@ -138,7 +149,7 @@ class AbstractFacet extends AbstractHelper
      */
     protected function prepareFacetData(string $facetField, array $facetValues, array $options): array
     {
-        $isFacetModeDirect = ($options['mode'] ?? '') === 'link';
+        $isFacetModeDirect = in_array($options['mode'] ?? null, ['link', 'js']);
 
         foreach ($facetValues as /* $facetIndex => */ &$facetValue) {
             $facetValueValue = (string) $facetValue['value'];
@@ -176,9 +187,7 @@ class AbstractFacet extends AbstractHelper
         ) {
             $values = $query['facet'][$facetField];
             // TODO Remove this filter to keep all active facet values?
-            $values = array_filter($values, function ($v) use ($facetValueValue) {
-                return $v !== $facetValueValue;
-            });
+            $values = array_filter($values, fn ($v) => $v !== $facetValueValue);
             $query['facet'][$facetField] = $values;
             $active = true;
         } else {
@@ -196,17 +205,18 @@ class AbstractFacet extends AbstractHelper
     /**
      * The facets may be indexed by the search engine.
      *
+     * @param string|int|float|null $value
+     *
      * @todo Remove search of facet labels: use values from the response (possible only for solr for now).
      */
-    protected function facetValueLabel(string $facetField, string $value): ?string
+    protected function facetValueLabel(string $facetField, $value): ?string
     {
-        if (!strlen($value)) {
+        if (is_null($value) || !strlen((string) $value)) {
             return null;
         }
 
         switch ($facetField) {
             case 'access':
-            case 'resource_name':
             case 'resource_type':
                 return $value;
 
@@ -228,7 +238,7 @@ class AbstractFacet extends AbstractHelper
                 } catch (\Exception $e) {
                 }
                 return $resource
-                    ? (string) $resource->displayTitle()
+                    ? (string) $resource->displayTitle(null, $this->siteLocales)
                     // Manage the case where a resource was indexed but removed.
                     // In public side, the item set should belong to a site too.
                     : null;
@@ -297,7 +307,7 @@ class AbstractFacet extends AbstractHelper
                 }
                 $resource = $this->api->searchOne('resource_templates', ['label' => $value])->getContent();
                 return $resource
-                    ? $resource->label()
+                    ? $this->translate->__invoke($resource->label())
                     // Manage the case where a resource was indexed but removed.
                     : null;
 
@@ -306,7 +316,7 @@ class AbstractFacet extends AbstractHelper
                 if (!is_numeric($value)) {
                     return $value;
                 }
-                if ($this->tree) {
+                if (!empty($this->tree)) {
                     if (is_numeric($value)) {
                         return $this->tree[$value]['title'] ?? $value;
                     }
@@ -331,7 +341,7 @@ class AbstractFacet extends AbstractHelper
                 /** @var \Omeka\Api\Representation\ItemSetRepresentation $resource */
                 $resource = $this->api->searchOne('item_sets', $data)->getContent();
                 return $resource
-                    ? (string) $resource->displayTitle()
+                    ? (string) $resource->displayTitle(null, $this->siteLocales)
                     // Manage the case where a resource was indexed but removed.
                     // In public side, the item set should belong to a site too.
                     : null;

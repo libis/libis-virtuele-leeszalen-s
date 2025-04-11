@@ -8,23 +8,43 @@ class FacetSelectRange extends AbstractFacet
 
     protected function prepareFacetData(string $facetField, array $facetValues, array $options): array
     {
-        $isFacetModeDirect = ($options['mode'] ?? '') === 'link';
+        $isFacetModeDirect = in_array($options['mode'] ?? null, ['link', 'js']);
 
         // It is simpler and better to get from/to from the query, because it
         // can manage discrete range.
-        $rangeFrom = isset($this->queryBase['facet'][$facetField]['from']) && $this->queryBase['facet'][$facetField]['from'] !== ''
-            ? $this->queryBase['facet'][$facetField]['from']
-            : null;
-        $rangeTo = isset($this->queryBase['facet'][$facetField]['to']) && $this->queryBase['facet'][$facetField]['to'] !== ''
-            ? $this->queryBase['facet'][$facetField]['to']
-            : null;
+        $rangeFrom = $this->queryBase['facet'][$facetField]['from'] ?? $options['min'] ?? null;
+        $rangeFrom = $rangeFrom === '' ? null : $rangeFrom;
+        $rangeTo = $this->queryBase['facet'][$facetField]['to'] ?? $options['max'] ?? null;
+        $rangeTo = $rangeTo === '' ? null : $rangeTo;
 
-        $hasRangeFromOnly = !is_null($rangeFrom) && is_null($rangeTo);
-        $hasRangeToOnly = is_null($rangeFrom) && !is_null($rangeTo);
-        $hasRangeFull = !is_null($rangeFrom) && !is_null($rangeTo);
+        $firstValue = count($facetValues) ? reset($facetValues) : null;
+
+        if (is_null($rangeFrom) && is_null($rangeTo)) {
+            $hasRangeFromOnly = false;
+            $hasRangeToOnly = false;
+            $hasRangeFull = false;
+            $isNumericRange = is_numeric($firstValue);
+        } elseif (is_null($rangeTo)) {
+            $hasRangeFromOnly = true;
+            $hasRangeToOnly = false;
+            $hasRangeFull = false;
+            $isNumericRange = is_numeric($rangeFrom);
+        } elseif (is_null($rangeFrom)) {
+            $hasRangeFromOnly = false;
+            $hasRangeToOnly = true;
+            $hasRangeFull = false;
+            $isNumericRange = is_numeric($rangeTo);
+        } else {
+            $hasRangeFromOnly = false;
+            $hasRangeToOnly = false;
+            $hasRangeFull = true;
+            $isNumericRange = is_numeric($rangeFrom) && is_numeric($rangeTo);
+        }
+
         $total = 0;
 
-        foreach ($facetValues as /* $facetIndex => */ &$facetValue) {
+        // Contains all values, with one active for "from" and one for "to".
+        foreach ($facetValues as &$facetValue) {
             $query = $this->queryBase;
             $active = false;
             $urls = [
@@ -33,21 +53,37 @@ class FacetSelectRange extends AbstractFacet
                 'to' => '',
             ];
 
-            $facetValueValue = (string) $facetValue['value'];
+            $facetValueValue = (string) ($facetValue['value'] ?? '');
             $isFrom = $facetValueValue === $rangeFrom;
             $isTo = $facetValueValue === $rangeTo;
             $fromOrTo = $isFrom ? 'from' : ($isTo ? 'to' : null);
 
-            // The facet value is compared against a string (the query args), not a numeric value.
             $facetValueLabel = (string) $this->facetValueLabel($facetField, $facetValueValue);
             if (strlen($facetValueLabel)) {
-                if ($hasRangeFromOnly) {
-                    $active = ($rangeFrom <=> $facetValueValue) <= 0;
-                } elseif ($hasRangeToOnly) {
-                    $active = ($facetValueValue <=> $rangeTo) <= 0;
-                } elseif ($hasRangeFull) {
-                    $active = ($rangeFrom <=> $facetValueValue) <= 0
-                        && ($facetValueValue <=> $rangeTo) <= 0;
+                // Manage discrete values.
+                // TODO Check if all this process is still needed.
+                if ($isNumericRange) {
+                    // For simplicity, use float to sort any number, even it is
+                    // an integer in most of the cases.
+                    if ($hasRangeFromOnly) {
+                        $active = ((float) $rangeFrom <=> (float) $facetValueValue) <= 0;
+                    } elseif ($hasRangeToOnly) {
+                        $active = ((float) $facetValueValue <=> (float) $rangeTo) <= 0;
+                    } elseif ($hasRangeFull) {
+                        $active = ((float) $rangeFrom <=> (float) $facetValueValue) <= 0
+                            && ((float) $facetValueValue <=> (float) $rangeTo) <= 0;
+                    }
+                } else {
+                    // The facet value is compared against a string (the query
+                    // args), not a numeric value.
+                    if ($hasRangeFromOnly) {
+                        $active = ($rangeFrom <=> $facetValueValue) <= 0;
+                    } elseif ($hasRangeToOnly) {
+                        $active = ($facetValueValue <=> $rangeTo) <= 0;
+                    } elseif ($hasRangeFull) {
+                        $active = ($rangeFrom <=> $facetValueValue) <= 0
+                            && ($facetValueValue <=> $rangeTo) <= 0;
+                    }
                 }
                 if ($active) {
                     $total += $facetValue['count'];
@@ -88,8 +124,6 @@ class FacetSelectRange extends AbstractFacet
             'name' => $facetField,
             'facetValues' => $facetValues,
             'options' => $options,
-            'from' => $rangeFrom,
-            'to' => $rangeTo,
             'total' => $total,
         ];
     }

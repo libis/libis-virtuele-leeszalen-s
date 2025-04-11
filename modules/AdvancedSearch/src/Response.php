@@ -2,7 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016
- * Copyright Daniel Berthereau, 2018-2024
+ * Copyright Daniel Berthereau, 2018-2025
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -30,17 +30,23 @@
 
 namespace AdvancedSearch;
 
+use JsonSerializable;
 use Omeka\Api\Manager as ApiManager;
 
 /**
  * @todo Manage resources as a whole with a global order.
  */
-class Response implements \JsonSerializable
+class Response implements JsonSerializable
 {
     /**
      * @var \Omeka\Api\Manager
      */
     protected $api;
+
+    /**
+     * @var \AdvancedSearch\Query
+     */
+    protected $query;
 
     /**
      * @var bool
@@ -55,7 +61,22 @@ class Response implements \JsonSerializable
     /**
      * @var int
      */
-    protected $totalResults = 0;
+    protected $currentPage = \Omeka\Stdlib\Paginator::CURRENT_PAGE;
+
+    /**
+     * @var int
+     */
+    protected $perPage = \Omeka\Stdlib\Paginator::PER_PAGE;
+
+    /**
+     * @var int
+     */
+    protected $totalResults = \Omeka\Stdlib\Paginator::TOTAL_COUNT;
+
+    /**
+     * @var bool
+     */
+    protected $byResourceType = false;
 
     /**
      * @var array
@@ -99,6 +120,17 @@ class Response implements \JsonSerializable
         return $this;
     }
 
+    public function setQuery(Query $query): self
+    {
+        $this->query = $query;
+        return $this;
+    }
+
+    public function getQuery(): ?Query
+    {
+        return $this->query;
+    }
+
     public function setIsSuccess(bool $isSuccess): self
     {
         $this->isSuccess = $isSuccess;
@@ -122,6 +154,34 @@ class Response implements \JsonSerializable
     }
 
     /**
+     * @param int $page
+     */
+    public function setCurrentPage(?int $page): self
+    {
+        $this->currentPage = (int) $page;
+        return $this;
+    }
+
+    public function getCurrentPage(): int
+    {
+        return $this->currentPage;
+    }
+
+    /**
+     * @param int $perPage
+     */
+    public function setPerPage(?int $perPage): self
+    {
+        $this->perPage = (int) $perPage;
+        return $this;
+    }
+
+    public function getPerPage(): int
+    {
+        return $this->perPage;
+    }
+
+    /**
      * @param int $totalResults
      */
     public function setTotalResults(?int $totalResults): self
@@ -133,6 +193,26 @@ class Response implements \JsonSerializable
     public function getTotalResults(): int
     {
         return $this->totalResults;
+    }
+
+    public function setByResourceType(bool $byResourceType): self
+    {
+        $this->byResourceType = $byResourceType;
+        return $this;
+    }
+
+    public function getByResourceType(): bool
+    {
+        return $this->byResourceType;
+    }
+
+    /**
+     * @param array $resourceTotalResults All total results by resource type.
+     */
+    public function setAllResourceTotalResults(array $resourceTotalResults): self
+    {
+        $this->resourceTotalResults = $resourceTotalResults;
+        return $this;
     }
 
     /**
@@ -154,6 +234,14 @@ class Response implements \JsonSerializable
         return is_null($resourceType)
             ? $this->resourceTotalResults
             : $this->resourceTotalResults[$resourceType] ?? 0;
+    }
+
+    /**
+     * Get the list of resource types from results.
+     */
+    public function getResourceTypes(): array
+    {
+        return array_keys($this->resourceTotalResults);
     }
 
     /**
@@ -197,7 +285,7 @@ class Response implements \JsonSerializable
      *
      * @param string|null $resourceType The resource type ("items", "item_sets"…).
      */
-    public function getResults(string $resourceType = null): array
+    public function getResults(?string $resourceType = null): array
     {
         return is_null($resourceType)
             ? $this->results
@@ -232,7 +320,7 @@ class Response implements \JsonSerializable
     }
 
     /**
-     * Get resources ids for a resource type or all resource types.
+     * Get resources ids for a resource type or all types, without pagination.
      *
      * @param string|null $resourceType The resource type ("items", "item_sets"…).
      * @param bool $byResourceType Merge ids or not.
@@ -240,9 +328,11 @@ class Response implements \JsonSerializable
      * @internal Currently experimental.
      * @todo Return ids directly with array_column() in the response or include it by default.
      */
-    public function getResourceIds(string $resourceType = null, bool $byResourceType = false): array
+    public function getAllResourceIds(?string $resourceType = null, bool $byResourceType = false): array
     {
+        // When the data are not filled early, use results.
         if (!count($this->allResourceIdsByResourceType)) {
+            // TODO Add a logger when the resource ids by resource type are not filled early.
             foreach (array_keys($this->results) as $resourceType) {
                 $this->allResourceIdsByResourceType[$resourceType] = array_column($this->getResults($resourceType), 'id');
             }
@@ -270,7 +360,7 @@ class Response implements \JsonSerializable
      * When resources types are set and unique, the key is the id (that is the
      * case with item and item set, not pages).
      */
-    public function getResources(string $resourceType = null): array
+    public function getResources(?string $resourceType = null): array
     {
         if (!$this->api) {
             return [];
@@ -439,7 +529,11 @@ class Response implements \JsonSerializable
         return [
             'success' => $this->isSuccess(),
             'message' => $this->getMessage(),
+            'current_page' => $this->getCurrentPage(),
+            'per_page' => $this->getPerPage(),
             'total_results' => $this->getTotalResults(),
+            'resource_types' => $this->getResourceTypes(),
+            'by_resource_type' => $this->getByResourceType(),
             'resource_total_results' => $this->getResourceTotalResults(),
             'results' => $this->getResults(),
             'facet_counts' => $this->getFacetCounts(),

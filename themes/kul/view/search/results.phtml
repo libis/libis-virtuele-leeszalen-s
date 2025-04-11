@@ -1,0 +1,104 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Omeka\Api\Representation\SiteRepresentation|null $site
+ * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig
+ * @var \AdvancedSearch\Query $query
+ * @var \AdvancedSearch\Response $response
+ * @var ?string $resourceType The resource type may be "resources" or a specific one.
+ * @var \Omeka\Api\Representation\ItemSetRepresentation|null $itemSet
+ */
+
+// A check is done: when page is not first, the resources may be empty even with results.
+$displayParts = [
+    'search_filters' => 'header',
+    'active_facets' => 'none',
+    'total_results' => 'header',
+    'search_form_simple' => 'none',
+    'search_form_quick' => 'none',
+    'paginator' => 'header',
+    'per_page' => 'header',
+    'sort' => 'header',
+    'grid_list' => 'header',
+    'grid_list_mode' => 'auto',
+];
+$displayParts = $searchConfig ? $searchConfig->setting('results', $displayParts) : $displayParts;
+$displayParts = array_filter($displayParts, fn ($v) => in_array($v, [$resultPart, 'both']));
+
+$sortFields = isset($displayParts['sort']) ? $searchConfig->subSetting('results', 'sort_list') : [];
+
+$resources = $response->getResources($resourceType);
+if (!$resources) return;
+
+$plugins = $this->getHelperPluginManager();
+$assetUrl = $plugins->get('assetUrl');
+$translate = $plugins->get('translate');
+$hyperlink = $plugins->get('hyperlink');
+$thumbnail = $plugins->get('thumbnail');
+$escapeValueOrGetHtml = $plugins->get('escapeValueOrGetHtml');
+
+$selectionButton = $site && $plugins->has('selectionButton') && $this->siteSetting('selection_append_items_browse_individual') ? $plugins->get('selectionButton') : null;
+$contactUsSelector = $site && $plugins->has('contactUsSelector') && $this->siteSetting('contactus_append_items_browse_individual') ? $plugins->get('contactUsSelector') : null;
+
+// Can be simplified in a public theme.
+$setting = $plugins->get(isset($site) ? 'siteSetting' : 'setting');
+
+$siteSlug = isset($site) ? $site->slug() : null;
+
+$filterLocale = (bool) $setting('filter_locale_values');
+$lang = $plugins->get('lang')();
+$langValue = $filterLocale ? [$lang, ''] : null;
+
+$untitled = $translate('[Untitled]');
+
+$headingTerm = $setting('browse_heading_property_term');
+$bodyTerm = $setting('browse_body_property_term');
+
+$gridListMode = $searchConfig->subSetting('results', 'grid_list_mode', 'auto');
+
+// A list does not have html-code in a consistant user interface.
+$allowHtml = (bool) $searchConfig->subSetting('results', 'allow_html');
+
+$thumbnailMode = $searchConfig->subSetting('results', 'thumbnail_mode', 'default');
+$noThumbnail = $thumbnailMode === 'none';
+$allThumbnail = $thumbnailMode === 'all';
+$defaultThumbnail = $allThumbnail
+    ? sprintf('<img src="' . $assetUrl('thumbnails/default.png', 'Omeka', true) . '" title="' . $translate('No media') . '"/>')
+    : '';
+
+$thumbnailType = $searchConfig->subSetting('results', 'thumbnail_type', 'medium');
+?>
+
+<div class="row">
+    <div class="col">
+        <h3 style="padding: 10px 16px;"><?= $response->getTotalResults() ?> item(s)</h3>
+    </div>
+    <?php if (count($sortFields)): ?>
+        <div class="search-sort text-right col">
+            <?= $this->searchSortSelector($query, $sortFields, ['as_url' => true, 'label' => $searchConfig->subSetting('results', 'label_sort')]) ?>
+        </div>
+    <?php endif; ?>
+</div>
+
+<ul class="resource-list search-results-list<?= $gridListMode === 'list_only' ? ' list' : ($gridListMode === 'grid_only' ? ' grid' : '') ?>">
+    <?php /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation $resource */
+    foreach ($resources as $resource):
+        $resourceUrl = isset($site) ? $resource->siteUrl($siteSlug) : $resource->adminUrl();
+        $resourceType = $resource->getControllerName();
+        $heading = $headingTerm ? $resource->value($headingTerm, ['default' => $untitled, 'lang' => $langValue]) : $resource->displayTitle($untitled, $langValue);
+        $body = $bodyTerm ? $resource->value($bodyTerm, ['lang' => $langValue, 'default' => '']) : $resource->displayDescription(null, $langValue);
+        ?>
+    <li class="resource <?= $resourceType ?>">
+        <?php $resourceThumbnail = $thumbnail($resource, $thumbnailType); ?>
+        <div class="resource-thumbnail<?= $resourceThumbnail ? '' : ($allThumbnail ? ' default-thumbnail' : '') ?>" style="border: solid #d4e7f3;">
+            <?= $hyperlink->raw($resourceThumbnail ?: $defaultThumbnail, $resourceUrl, ['class' => 'resource-link']) ?>
+        </div>
+        <div class="resource-metadata" style="text-align:center;">
+            <h4><?= $hyperlink->raw($escapeValueOrGetHtml($heading), $resourceUrl, ['class' => 'resource-link']) ?></h4>
+            <div class="description">
+                <?= $body ?>
+            </div>
+        </div>
+    </li>
+    <?php endforeach; ?>
+</ul>

@@ -2,7 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016
- * Copyright Daniel Berthereau, 2017-2024
+ * Copyright Daniel Berthereau, 2017-2025
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -31,6 +31,7 @@
 namespace AdvancedSearch\Api\Adapter;
 
 use AdvancedSearch\Entity\SearchEngine;
+use Common\Stdlib\PsrMessage;
 use Doctrine\ORM\QueryBuilder;
 use Omeka\Api\Adapter\AbstractEntityAdapter;
 use Omeka\Api\Request;
@@ -42,8 +43,10 @@ class SearchConfigAdapter extends AbstractEntityAdapter
     protected $sortFields = [
         'id' => 'id',
         'name' => 'name',
-        'path' => 'path',
+        'slug' => 'slug',
         'engine' => 'engine',
+        'search_engine' => 'engine',
+        'form_adapter' => 'formAdapter',
         'created' => 'created',
         'modified' => 'modified',
     ];
@@ -51,8 +54,9 @@ class SearchConfigAdapter extends AbstractEntityAdapter
     protected $scalarFields = [
         'id' => 'id',
         'name' => 'name',
-        'path' => 'path',
+        'slug' => 'slug',
         'engine' => 'engine',
+        'search_engine' => 'engine',
         'form_adapter' => 'formAdapter',
         'settings' => 'settings',
         'created' => 'created',
@@ -94,22 +98,35 @@ class SearchConfigAdapter extends AbstractEntityAdapter
                 )
             );
         }
+
         if (isset($query['name'])) {
             $qb->andWhere($expr->eq(
                 'omeka_root.name',
                 $this->createNamedParameter($qb, $query['name']))
             );
         }
-        if (isset($query['path'])) {
+
+        if (isset($query['slug'])) {
             $qb->andWhere($expr->eq(
-                'omeka_root.path',
-                $this->createNamedParameter($qb, $query['path']))
+                'omeka_root.slug',
+                $this->createNamedParameter($qb, $query['slug']))
             );
         }
+
         if (isset($query['form'])) {
             $qb->andWhere($expr->eq(
                 'omeka_root.formAdapter',
                 $this->createNamedParameter($qb, $query['form']))
+            );
+        }
+
+        if (isset($query['path'])) {
+            $this->getServiceLocator()->get('Omeka\Logger')->warn(
+                'A query for search config uses the argument path, that was replaced by "slug". You should update your query. An exception will be thrown in a future version.' // @translate
+            );
+            $qb->andWhere($expr->eq(
+                'omeka_root.slug',
+                $this->createNamedParameter($qb, $query['path']))
             );
         }
     }
@@ -120,20 +137,20 @@ class SearchConfigAdapter extends AbstractEntityAdapter
         if ($this->shouldHydrate($request, 'o:name')) {
             $entity->setName($request->getValue('o:name'));
         }
-        if ($this->shouldHydrate($request, 'o:path')) {
-            $entity->setPath($request->getValue('o:path'));
+        if ($this->shouldHydrate($request, 'o:slug')) {
+            $entity->setSlug($request->getValue('o:slug'));
         }
-        if ($this->shouldHydrate($request, 'o:engine')) {
-            $engine = $request->getValue('o:engine');
-            if (is_array($engine)) {
-                $engine = $this->getAdapter('search_engines')->findEntity($engine['o:id'] ?? 0);
-            } elseif (is_numeric($engine)) {
-                $engine = $this->getAdapter('search_engines')->findEntity((int) $engine);
+        if ($this->shouldHydrate($request, 'o:search_engine')) {
+            $searchEngine = $request->getValue('o:search_engine');
+            if (is_array($searchEngine)) {
+                $searchEngine = $this->getAdapter('search_engines')->findEntity($searchEngine['o:id'] ?? 0);
+            } elseif (is_numeric($searchEngine)) {
+                $searchEngine = $this->getAdapter('search_engines')->findEntity((int) $searchEngine);
             }
-            $entity->setEngine($engine);
+            $entity->setEngine($searchEngine);
         }
-        if ($this->shouldHydrate($request, 'o:form')) {
-            $entity->setFormAdapter($request->getValue('o:form'));
+        if ($this->shouldHydrate($request, 'o:form_adapter')) {
+            $entity->setFormAdapter($request->getValue('o:form_adapter'));
         }
         if ($this->shouldHydrate($request, 'o:settings')) {
             $entity->setSettings($request->getValue('o:settings') ?? []);
@@ -147,9 +164,12 @@ class SearchConfigAdapter extends AbstractEntityAdapter
             $errorStore->addError('o:name', 'The name cannot be empty.'); // @translate
         }
 
-        $path = $entity->getPath();
-        if (!$this->isUnique($entity, ['path' => $path])) {
-            $errorStore->addError('o:path', sprintf('The path "%s" is already taken.', $path)); // @translate
+        $slug = $entity->getSlug();
+        if (!$this->isUnique($entity, ['slug' => $slug])) {
+            $errorStore->addError('o:slug', new PsrMessage(
+                'The slug "{search_slug}" is already taken.', // @translate
+                ['search_slug' => $slug]
+            ));
         }
     }
 }

@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 /*
- * Copyright Daniel Berthereau 2018-2024
+ * Copyright Daniel Berthereau 2018-2025
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -29,17 +29,25 @@
 
 namespace AdvancedSearch\Form\SearchFilter;
 
+use AdvancedSearch\Stdlib\SearchResources;
+use AdvancedSearch\View\Helper\SearchFiltersTrait;
 use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
+use Laminas\I18n\Translator\TranslatorAwareTrait;
 
 class Advanced extends Fieldset
 {
+    use SearchFiltersTrait;
+    use TranslatorAwareTrait;
+
     public function init(): void
     {
         $filterFields = $this->getFilterFields();
         if (empty($filterFields)) {
             return;
         }
+
+        $filterOptions = $this->getOption('options') ?? [];
 
         $this
             ->setLabel('')
@@ -64,14 +72,14 @@ class Advanced extends Fieldset
                     'options' => [
                         'value_options' => $valueOptions,
                         'label_attributes' => [
-                            'class' => 'search-boolean-label',
+                            'class' => 'search-join-label',
                         ],
-                    ],
+                    ] + ($filterOptions['join']['options'] ?? []),
                     'attributes' => [
                         'value' => 'and',
                         // TODO Manage width for chosen select (but useless: the number of options is small).
                         // 'class' => 'chosen-select',
-                    ],
+                    ] + ($filterOptions['join']['attributes'] ?? []),
                 ]);
         }
 
@@ -82,67 +90,19 @@ class Advanced extends Fieldset
                 'type' => Element\Select::class,
                 'options' => [
                     'value_options' => $filterFields,
-                ],
+                ] + ($filterOptions['field']['options'] ?? []),
                 'attributes' => [
                     'value' => (string) key($filterFields),
                     // TODO Manage width for chosen select (but useless: the number of options is small).
                     // 'class' => 'chosen-select',
-                ],
+                ] + ($filterOptions['field']['attributes'] ?? []),
             ]);
 
         $operator = (bool) $this->getOption('field_operator');
         if ($operator) {
-            $operators = $this->getOption('field_operators') ?: [
-                'eq' => 'is exactly', // @translate
-                'neq' => 'is not exactly', // @translate
-                'in' => 'contains', // @translate
-                'nin' => 'does not contain', // @translate
-                'sw' => 'starts with', // @translate
-                'nsw' => 'does not start with', // @translate
-                'ew' => 'ends with', // @translate
-                'new' => 'does not end with', // @translate
-                'near' => 'is similar to', // @translate
-                'nnear' => 'is not similar to', // @translate
-                'ex' => 'has any value', // @translate
-                'nex' => 'has no values', // @translate
-                'exs' => 'has a single value', // @translate
-                'nexs' => 'has not a single value', // @translate
-                'exm' => 'has multiple values', // @translate
-                'nexm' => 'has not multiple values', // @translate
-                'res' => 'is resource with ID', // @translate
-                'nres' => 'is not resource with ID', // @translate
-                'resq' => 'is resource matching query', // @translate
-                'nresq' => 'is not resource matching query', // @translate
-                'lex' => 'is a linked resource', // @translate
-                'nlex' => 'is not a linked resource', // @translate
-                'lres' => 'is linked with resource with ID', // @translate
-                'nlres' => 'is not linked with resource with ID', // @translate
-                'lkq' => 'is linked with resources matching query', // @translate
-                'nlkq' => 'is not linked with resources matching query', // @translate
-                /*
-                'list',
-                'nlist',
-                'res',
-                'nres',
-                'tp'…,
-                 */
-            ];
+            $operators = $this->getOption('field_operators') ?: $this->getQueryTypesLabels();
             if ($joiner && $joinerNot) {
-                unset(
-                    $operators['neq'],
-                    $operators['nin'],
-                    $operators['nsw'],
-                    $operators['new'],
-                    $operators['nnear'],
-                    $operators['nex'],
-                    $operators['nexs'],
-                    $operators['nexm'],
-                    $operators['nres'],
-                    $operators['nresq'],
-                    $operators['nlex'],
-                    $operators['nlres'],
-                    $operators['nlkq']
-                );
+                $operators = array_diff_key($operators, array_flip(SearchResources::FIELD_QUERY['negative']));
             }
             $this
                 ->add([
@@ -153,20 +113,62 @@ class Advanced extends Fieldset
                         'label_attributes' => [
                             'class' => 'search-type-label',
                         ],
-                    ],
+                    ] + ($filterOptions['type']['options'] ?? []),
                     'attributes' => [
                         'value' => 'in',
                         // TODO Manage width for chosen select (but useless: the number of options is small).
                         // 'class' => 'chosen-select',
-                    ],
+                    ] + ($filterOptions['type']['attributes'] ?? []),
                 ]);
         }
 
         $this
             ->add([
-                'name' => 'value',
+                'name' => 'val',
                 'type' => Element\Text::class,
-            ]);
+                'options' => $filterOptions['val']['options'] ?? [],
+                'attributes' => $filterOptions['val']['attributes'] ?? [],
+            ])
+
+            ->add([
+                'name' => 'minus',
+                'type' => Element\Button::class,
+                'options' => [
+                    'label' => ' ',
+                    'label_options' => [
+                        'disable_html_escape' => true,
+                    ],
+                    'label_attributes' => [
+                        'class' => 'search-filter-action-label',
+                    ],
+                ],
+                'attributes' => [
+                    // Don't use o-icon-delete.
+                    'class' => 'search-filter-action search-filter-minus fa fa-minus remove-value button',
+                    'aria-label' => 'Remove this filter', // @translate
+                ],
+            ])
+            /* // TODO Allow to insert a filter between two filters? Useless because order has no special meaning for now.
+            ->add([
+                'name' => 'plus',
+                'type' => Element\Button::class,
+                'options' => [
+                    'label' => ' ',
+                    'label_options' => [
+                        'disable_html_escape' => true,
+                    ],
+                    'label_attributes' => [
+                        'class' => 'search-filter-action-label',
+                    ],
+                ],
+                'attributes' => [
+                    // Don't use o-icon-add.
+                    'class' => 'search-filter-action search-filter-plus fa fa-plus add-value button',
+                    'aria-label' => 'Add a filter', // @translate
+                ],
+            ])
+            */
+        ;
     }
 
     /**
@@ -175,21 +177,17 @@ class Advanced extends Fieldset
     protected function getFilterFields(): array
     {
         $fields = $this->getOption('fields');
-        if (empty($fields)) {
+        if (!$fields) {
             return [];
         }
         /** @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig */
         $searchConfig = $this->getOption('search_config');
-        if (!$searchConfig) {
+        $engineAdapter = $searchConfig ? $searchConfig->engineAdapter() : null;
+        if (!$engineAdapter) {
             return [];
         }
-        $searchEngine = $searchConfig->engine();
-        $searchAdapter = $searchEngine->adapter();
-        if (empty($searchAdapter)) {
-            return [];
-        }
-        $availableFields = $searchAdapter->getAvailableFields($searchEngine);
-        if (empty($availableFields)) {
+        $availableFields = $engineAdapter->getAvailableFields();
+        if (!$availableFields) {
             return [];
         }
         return array_intersect_key($fields, $availableFields);

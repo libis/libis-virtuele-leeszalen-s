@@ -21,7 +21,7 @@ class SearchSuggesterRepresentation extends AbstractEntityRepresentation
         $modified = $this->resource->getModified();
         return [
             'o:name' => $this->resource->getName(),
-            'o:engine' => $this->engine()->getReference(),
+            'o:search_engine' => $this->searchEngine()->getReference(),
             'o:settings' => $this->resource->getSettings(),
             'o:created' => $this->getDateTime($this->resource->getCreated()),
             'o:modified' => $modified ? $this->getDateTime($modified) : null,
@@ -39,7 +39,7 @@ class SearchSuggesterRepresentation extends AbstractEntityRepresentation
             'force_canonical' => $canonical,
         ];
 
-        return $url('admin/search/suggester-id', $params, $options);
+        return $url('admin/search-manager/suggester-id', $params, $options);
     }
 
     public function siteUrl($siteSlug = null, $canonical = false)
@@ -52,10 +52,15 @@ class SearchSuggesterRepresentation extends AbstractEntityRepresentation
         return $this->resource->getName();
     }
 
-    public function engine(): \AdvancedSearch\Api\Representation\SearchEngineRepresentation
+    public function searchEngine(): \AdvancedSearch\Api\Representation\SearchEngineRepresentation
     {
         $searchEngine = $this->resource->getEngine();
         return $this->getAdapter('search_engines')->getRepresentation($searchEngine);
+    }
+
+    public function engineAdapter(): ?\AdvancedSearch\EngineAdapter\EngineAdapterInterface
+    {
+        return $this->searchEngine()->engineAdapter();
     }
 
     public function settings(): array
@@ -87,13 +92,21 @@ class SearchSuggesterRepresentation extends AbstractEntityRepresentation
     /**
      * @todo Remove site (but manage direct query).
      * @todo Manage direct query here? Remove it?
+     *
+     * Adapted:
+     * @see \AdvancedSearch\Api\Representation\SearchConfigRepresentation::suggest()
+     * @see \AdvancedSearch\Api\Representation\SearchSuggesterRepresentation::suggest()
+     * @see \AdvancedSearch\Form\MainSearchForm::listValuesForField()
+     * @see \Reference\Mvc\Controller\Plugin\References
      */
     public function suggest(string $q, ?SiteRepresentation $site = null): Response
     {
         $query = new Query();
+
         $query->setQuery($q);
 
-        $user = $this->getServiceLocator()->get('Omeka\AuthenticationService')->getIdentity();
+        $services = $this->getServiceLocator();
+        $user = $services->get('Omeka\AuthenticationService')->getIdentity();
         // TODO Manage roles from modules and visibility from modules (access resources).
         $omekaRoles = [
             \Omeka\Permissions\Acl::ROLE_GLOBAL_ADMIN,
@@ -109,14 +122,36 @@ class SearchSuggesterRepresentation extends AbstractEntityRepresentation
 
         if ($site) {
             $query->setSiteId($site->id());
+            $siteSettings = $services->get('Omeka\Settings\Site');
+            $searchConfigId = (int) $siteSettings->get('advancedsearch_main_config');
+        } else {
+            $settings = $services->get('Omeka\Settings');
+            $searchConfigId = (int) $settings->get('advancedsearch_main_config');
         }
 
-        $engine = $this->engine();
-        $engineSettings = $engine->settings();
+        if ($searchConfigId) {
+            $api = $services->get('Omeka\ApiManager');
+            try {
+                /** @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig*/
+                $searchConfig = $api->read('search_configs', ['id' => $searchConfigId])->getContent();
+                $aliases = $searchConfig->subSetting('index', 'aliases', []);
+                $fieldQueryArgs = $searchConfig->subSetting('index', 'query_args', []);
+                $query
+                    ->setAliases($aliases)
+                    ->setFieldsQueryArgs($fieldQueryArgs)
+                    ->setOption('remove_diacritics', (bool) $searchConfig->subSetting('q', 'remove_diacritics', false))
+                    ->setOption('default_search_partial_word', (bool) $searchConfig->subSetting('q', 'default_search_partial_word', false));
+            } catch (\Exception $e) {
+                // No aliases.
+            }
+        }
+
+        $searchEngine = $this->searchEngine();
+        $searchEngineSettings = $searchEngine->settings();
         $suggesterSettings = $this->settings();
 
         $query
-            ->setResources($engineSettings['resources'])
+            ->setResourceTypes($searchEngineSettings['resource_types'])
             ->setLimitPage(1, empty($suggesterSettings['limit']) ? \Omeka\Stdlib\Paginator::PER_PAGE : (int) $suggesterSettings['limit'])
             ->setSuggestOptions([
                 'suggester' => $this->resource->getId(),
@@ -126,22 +161,24 @@ class SearchSuggesterRepresentation extends AbstractEntityRepresentation
                 'length' => $suggesterSettings['length'] ?? 50,
             ])
             ->setSuggestFields($suggesterSettings['fields'] ?? [])
-            ->setExcludedFields($suggesterSettings['excluded_fields'] ?? []);
+            ->setExcludedFields($suggesterSettings['excluded_fields'] ?? [])
+        ;
 
         /** @var \AdvancedSearch\Querier\QuerierInterface $querier */
-        $querier = $engine
+        $querier = $searchEngine
             ->querier()
             ->setQuery($query);
         try {
             return $querier->querySuggestions();
         } catch (QuerierException $e) {
             $message = new PsrMessage(
-                "Query error: {message}\nQuery:{json_query}", // @translate
-                ['message' => $e->getMessage(), 'json_query' => json_encode($query->jsonSerialize(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)]
+                "Query error: {message}\nQuery:{query}", // @translate
+                ['message' => $e->getMessage(), 'query' => $query->jsonSerialize()]
             );
             $this->logger()->err($message->getMessage(), $message->getContext());
+            $translator = $services->get('MvcTranslator');
             return (new Response)
-                ->setMessage($message);
+                ->setMessage($message->setTranslator($translator));
         }
     }
 }

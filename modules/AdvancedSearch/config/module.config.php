@@ -18,6 +18,27 @@ return [
             dirname(__DIR__) . '/data/doctrine-proxies',
         ],
     ],
+    'service_manager' => [
+        'invokables' => [
+            Mvc\MvcListeners::class => Mvc\MvcListeners::class,
+        ],
+        'factories' => [
+            'AdvancedSearch\EngineAdapterManager' => Service\EngineAdapter\ManagerFactory::class,
+            'AdvancedSearch\FormAdapterManager' => Service\FormAdapter\ManagerFactory::class,
+            'AdvancedSearch\SearchResources' => Service\Stdlib\SearchResourcesFactory::class,
+        ],
+        'delegators' => [
+            'Omeka\ApiManager' => [
+                __NAMESPACE__ => Service\Delegator\ApiManagerDelegatorFactory::class,
+            ],
+            'Omeka\FulltextSearch' => [
+                __NAMESPACE__ => Service\Delegator\FulltextSearchDelegatorFactory::class,
+            ],
+        ],
+    ],
+    'listeners' => [
+        Mvc\MvcListeners::class,
+    ],
     'view_manager' => [
         'template_path_stack' => [
             dirname(__DIR__) . '/view',
@@ -35,29 +56,33 @@ return [
             'facetActives' => View\Helper\FacetActives::class,
             'facetCheckboxes' => View\Helper\FacetCheckboxes::class,
             'facetCheckboxesTree' => View\Helper\FacetCheckboxesTree::class,
-            'facetLabel' => View\Helper\FacetLabel::class,
+            'facetElements' => View\Helper\FacetElements::class,
             'facetLinks' => View\Helper\FacetLinks::class,
             'facetLinksTree' => View\Helper\FacetLinksTree::class,
+            'facetRangeDouble' => View\Helper\FacetRangeDouble::class,
             'facetSelect' => View\Helper\FacetSelect::class,
             'facetSelectRange' => View\Helper\FacetSelectRange::class,
             'formMultiText' => Form\View\Helper\FormMultiText::class,
+            'formRangeDouble' => Form\View\Helper\FormRangeDouble::class,
             'getSearchConfig' => View\Helper\GetSearchConfig::class,
             'hiddenInputsFromFilteredQuery' => View\Helper\HiddenInputsFromFilteredQuery::class,
-            'searchConfigCurrent' => View\Helper\SearchConfigCurrent::class,
             'searchFilters' => View\Helper\SearchFilters::class,
-            'searchForm' => View\Helper\SearchForm::class,
             'searchingFilters' => View\Helper\SearchingFilters::class,
             'searchingForm' => View\Helper\SearchingForm::class,
             'searchingUrl' => View\Helper\SearchingUrl::class,
+            'searchingValue' => View\Helper\SearchingValue::class,
             'searchPaginationPerPageSelector' => View\Helper\SearchPaginationPerPageSelector::class,
             'searchSortSelector' => View\Helper\SearchSortSelector::class,
         ],
         'factories' => [
             'apiSearch' => Service\ViewHelper\ApiSearchFactory::class,
             'apiSearchOne' => Service\ViewHelper\ApiSearchOneFactory::class,
-            'cleanQuery' => Service\ViewHelper\CleanQueryFactory::class,
+            'escapeValueOrGetHtml' => Service\ViewHelper\EscapeValueOrGetHtmlFactory::class,
+            'fieldSelect' => Service\ViewHelper\FieldSelectFactory::class,
+            'paginationSearch' => Service\ViewHelper\PaginationSearchFactory::class,
             'queryInput' => Service\ViewHelper\QueryInputFactory::class,
             'searchEngineConfirm' => Service\ViewHelper\SearchEngineConfirmFactory::class,
+            'searchResources' => Service\ViewHelper\SearchResourcesFactory::class,
             'searchSuggesterConfirm' => Service\ViewHelper\SearchSuggesterConfirmFactory::class,
         ],
         'delegators' => [
@@ -65,11 +90,15 @@ return [
                 Service\ViewHelper\FormQueryDelegatorFactory::class,
             ],
             'Laminas\Form\View\Helper\FormElement' => [
-                __NAMESPACE__ => Service\Delegator\FormElementDelegatorFactory::class,
+                Service\Delegator\FormElementDelegatorFactory::class,
             ],
             \Omeka\View\Helper\UserBar::class => [
                 Service\ViewHelper\UserBarDelegatorFactory::class,
             ],
+        ],
+        'aliases' => [
+            // Deprecated.
+            'searchConfigCurrent' => View\Helper\GetSearchConfig::class,
         ],
     ],
     'block_layouts' => [
@@ -79,20 +108,22 @@ return [
     ],
     'form_elements' => [
         'invokables' => [
-            Form\Admin\InternalConfigFieldset::class => Form\Admin\InternalConfigFieldset::class,
-            Form\Element\DataTextarea::class => Form\Element\DataTextarea::class,
             Form\Element\MultiText::class => Form\Element\MultiText::class,
             Form\Element\TextExact::class => Form\Element\TextExact::class,
         ],
         'factories' => [
             Form\Admin\ApiFormConfigFieldset::class => Service\Form\ApiFormConfigFieldsetFactory::class,
             Form\Admin\SearchConfigConfigureForm::class => Service\Form\SearchConfigConfigureFormFactory::class,
+            Form\Admin\SearchConfigFacetFieldset::class => \Common\Service\Form\GenericFormFactory::class,
+            Form\Admin\SearchConfigFilterFieldset::class => \Common\Service\Form\GenericFormFactory::class,
+            Form\Admin\SearchConfigSortFieldset::class => \Common\Service\Form\GenericFormFactory::class,
             Form\Admin\SearchConfigForm::class => Service\Form\SearchConfigFormFactory::class,
-            Form\Admin\SearchEngineConfigureForm::class => Service\Form\SearchEngineConfigureFormFactory::class,
+            Form\Admin\SearchEngineConfigureForm::class => \Common\Service\Form\GenericFormFactory::class,
             Form\Admin\SearchEngineForm::class => Service\Form\SearchEngineFormFactory::class,
             Form\Admin\SearchSuggesterForm::class => Service\Form\SearchSuggesterFormFactory::class,
+            Form\Element\FieldSelect::class => Service\Form\Element\FieldSelectFactory::class,
             Form\Element\SearchConfigSelect::class => Service\Form\Element\SearchConfigSelectFactory::class,
-            Form\SearchFilter\Advanced::class => Service\Form\StandardFactory::class,
+            Form\SearchFilter\Advanced::class => Service\Form\SearchFilterAdvancedFactory::class,
             Form\MainSearchForm::class => Service\Form\MainSearchFormFactory::class,
             Form\SearchingFormFieldset::class => Service\Form\SearchingFormFieldsetFactory::class,
             Form\SettingsFieldset::class => Service\Form\SettingsFieldsetFactory::class,
@@ -108,6 +139,11 @@ return [
             \Omeka\Form\Element\SiteSelect::class => Form\Element\SiteSelect::class,
         ],
     ],
+    'navigation_links' => [
+        'invokables' => [
+            'searchingPage' => Site\Navigation\Link\SearchingPage::class,
+        ],
+    ],
     'controllers' => [
         'invokables' => [
             Controller\Admin\IndexController::class => Controller\Admin\IndexController::class,
@@ -120,39 +156,11 @@ return [
         ],
     ],
     'controller_plugins' => [
-        'invokables' => [
-            'searchRequestToResponse' => Mvc\Controller\Plugin\SearchRequestToResponse::class,
-        ],
         'factories' => [
             'apiSearch' => Service\ControllerPlugin\ApiSearchFactory::class,
             'apiSearchOne' => Service\ControllerPlugin\ApiSearchOneFactory::class,
+            'listJobStatusesByIds' => Service\ControllerPlugin\ListJobStatusesByIdsFactory::class,
             'searchResources' => Service\ControllerPlugin\SearchResourcesFactory::class,
-            'totalJobs' => Service\ControllerPlugin\TotalJobsFactory::class,
-        ],
-    ],
-    'service_manager' => [
-        'invokables' => [
-            Mvc\MvcListeners::class => Mvc\MvcListeners::class,
-        ],
-        'factories' => [
-            'Search\AdapterManager' => Service\AdapterManagerFactory::class,
-            'Search\FormAdapterManager' => Service\FormAdapterManagerFactory::class,
-        ],
-        'delegators' => [
-            'Omeka\ApiManager' => [
-                __NAMESPACE__ => Service\Delegator\ApiManagerDelegatorFactory::class,
-            ],
-            'Omeka\FulltextSearch' => [
-                __NAMESPACE__ => Service\Delegator\FulltextSearchDelegatorFactory::class,
-            ],
-        ],
-    ],
-    'listeners' => [
-        Mvc\MvcListeners::class,
-    ],
-    'navigation_links' => [
-        'invokables' => [
-            'search-page' => Site\Navigation\Link\SearchPage::class,
         ],
     ],
     'router' => [
@@ -160,8 +168,7 @@ return [
             // TODO Include site routes here, not during bootstrap.
             'admin' => [
                 'child_routes' => [
-                    // To simplify migration, the route is "search".
-                    'search' => [
+                    'search-manager' => [
                         'type' => \Laminas\Router\Http\Literal::class,
                         'options' => [
                             'route' => '/search-manager',
@@ -277,37 +284,37 @@ return [
         'AdminModule' => [
             'advanced-search' => [
                 'label' => 'Search manager', // @translate
-                'route' => 'admin/search',
+                'route' => 'admin/search-manager',
                 'resource' => Controller\Admin\IndexController::class,
                 'privilege' => 'browse',
                 'class' => 'o-icon-search',
                 'pages' => [
                     [
-                        'route' => 'admin/search/engine',
+                        'route' => 'admin/search-manager/engine',
                         'visible' => false,
                         'pages' => [
                             [
-                                'route' => 'admin/search/engine-id',
+                                'route' => 'admin/search-manager/engine-id',
                                 'visible' => false,
                             ],
                         ],
                     ],
                     [
-                        'route' => 'admin/search/config',
+                        'route' => 'admin/search-manager/config',
                         'visible' => false,
                         'pages' => [
                             [
-                                'route' => 'admin/search/config-id',
+                                'route' => 'admin/search-manager/config-id',
                                 'visible' => false,
                             ],
                         ],
                     ],
                     [
-                        'route' => 'admin/search/suggester',
+                        'route' => 'admin/search-manager/suggester',
                         'visible' => false,
                         'pages' => [
                             [
-                                'route' => 'admin/search/suggester-id',
+                                'route' => 'admin/search-manager/suggester-id',
                                 'visible' => false,
                             ],
                         ],
@@ -317,8 +324,8 @@ return [
         ],
         'AdvancedSearch\Config' => [
             [
-                'label' => 'Manage', // @translate
-                'route' => 'admin/search/config-id',
+                'label' => 'Settings', // @translate
+                'route' => 'admin/search-manager/config-id',
                 'resource' => Controller\Admin\SearchConfigController::class,
                 'action' => 'edit',
                 'privilege' => 'edit',
@@ -326,7 +333,7 @@ return [
             ],
             [
                 'label' => 'Configure', // @translate
-                'route' => 'admin/search/config-id',
+                'route' => 'admin/search-manager/config-id',
                 'resource' => Controller\Admin\SearchConfigController::class,
                 'action' => 'configure',
                 'privilege' => 'edit',
@@ -351,12 +358,12 @@ return [
         'Try to map automatically the metadata and the properties that are not mapped yet with the fields of the index', // @translate
         '[Edit below]', // @translate
     ],
-    'search_adapters' => [
+    'advanced_search_engine_adapters' => [
         'factories' => [
-            'internal' => Service\Adapter\InternalAdapterFactory::class,
+            'internal' => Service\EngineAdapter\InternalFactory::class,
         ],
     ],
-    'search_form_adapters' => [
+    'advanced_search_form_adapters' => [
         'invokables' => [
             'main' => FormAdapter\MainFormAdapter::class,
         ],
@@ -366,74 +373,269 @@ return [
     ],
     'advancedsearch' => [
         'settings' => [
+            'advancedsearch_search_fields' => [
+                // Any resource type.
+                'common/advanced-search/sort',
+                'common/advanced-search/fulltext',
+                'common/advanced-search/properties',
+                'common/advanced-search/filters',
+                'common/advanced-search/resource-class',
+                'common/advanced-search/resource-template',
+                // Items.
+                'common/advanced-search/item-sets',
+                'common/advanced-search/site',
+                'common/advanced-search/has-media',
+                'common/advanced-search/media-types',
+                // Media
+                'common/advanced-search/media-type',
+                // Item sets.
+                // Other common.
+                'common/advanced-search/owner',
+                'common/advanced-search/visibility-radio',
+                'common/advanced-search/ids',
+                // Modules.
+                'common/advanced-search/item-set-is-dynamic',
+                'common/advanced-search/data-type-geography',
+                'common/numeric-data-types-advanced-search',
+            ],
             'advancedsearch_fulltextsearch_alto' => false,
             'advancedsearch_main_config' => 1,
-            'advancedsearch_configs' => [1],
             'advancedsearch_api_config' => '',
-            // TODO Remove this option if there is no issue with sync or async (except multiple search engines).
-            'advancedsearch_index_batch_edit' => 'sync',
             // Hidden value.
             'advancedsearch_all_configs' => [1 => 'find'],
         ],
         'site_settings' => [
+            // See the full list below.
             'advancedsearch_search_fields' => [
+                // Any resource type.
                 'common/advanced-search/sort',
                 'common/advanced-search/fulltext',
-                'common/advanced-search/properties',
+                // 'common/advanced-search/properties',
+                'common/advanced-search/filters',
                 'common/advanced-search/resource-class',
-                // 'common/advanced-search/resource-template',
+                // Items.
                 'common/advanced-search/item-sets',
-                'common/advanced-search/date-time',
                 'common/advanced-search/has-media',
+                'common/advanced-search/media-types',
+                // Media
+                'common/advanced-search/media-type',
+                // Item sets.
+                // Other common.
+                'common/advanced-search/resource-template-restrict',
                 'common/advanced-search/ids',
                 // Modules.
-                'common/advanced-search/media-type',
                 'common/advanced-search/data-type-geography',
                 'common/numeric-data-types-advanced-search',
             ],
             'advancedsearch_main_config' => 1,
             'advancedsearch_configs' => [1],
-            'advancedsearch_redirect_itemset' => true,
+            'advancedsearch_redirect_itemset_browse' => ['all'],
+            'advancedsearch_redirect_itemset_search' => [],
+            'advancedsearch_redirect_itemset_search_first' => [],
+            'advancedsearch_redirect_itemset_page_url' => [],
+            // Hidden options.
+            // This option is a merge of the previous ones for simplicity.
+            'advancedsearch_redirect_itemsets' => [],
+            // The old option is not removed for now for compatibility with old themes (search, links).
+            'advancedsearch_redirect_itemset' => 'browse',
         ],
         'block_settings' => [
             'searchingForm' => [
-                'heading' => '',
-                'html' => '',
+                'search_config' => null,
+                'display_results' => true,
+                'query' => [],
+                'query_filter' => [],
                 'link' => '',
-                // Name "search_page" is kept to simplify migration.
-                'search_page' => null,
-                'display_results' => false,
-                'query' => '',
-                'query_filter' => '',
-                'template' => '',
             ],
         ],
-        // This is the default list of all possible fields, allowing other modules
-        // to complete it. The partials that are not set in merged Config (included
-        // config/local.config.php) are not managed by this module.
+        // This list of templates for advanced search form comes from view/common/advanced-search.
+        // The partials that are not set in merged Config (included config/local.config.php)
+        // are not managed by this module. Other modules can complete it.
+        // The keys "admin_site" and "default_site" mean available on admin or
+        // site by default. Any partial can be displayed.
         'search_fields' => [
-            // From view/common/advanced-search'.
-            'common/advanced-search/sort' => ['label' => 'Sort'], // @translate
-            'common/advanced-search/fulltext' => ['label' => 'Full text'], // @translate
-            'common/advanced-search/properties' => ['label' => 'Properties'], // @translate
-            'common/advanced-search/resource-class' => ['label' => 'Classes'], // @translate
-            'common/advanced-search/resource-template' => ['label' => 'Templates', 'default' => false], // @translate
-            // This partial is managed separately by a core option.
-            //'common/advanced-search/resource-template-restrict' => ['label' => 'Templates (restricted)', 'default' => false], // @translate
-            'common/advanced-search/item-sets' => ['label' => 'Item sets'], // @translate
-            'common/advanced-search/owner' => ['label' => 'Owner', 'default' => false], // @translate
-            'common/advanced-search/site' => ['label' => 'Site', 'default' => false], // @translate
-            // From module advanced search plus.
-            'common/advanced-search/date-time' => ['label' => 'Date time'], // @translate
-            'common/advanced-search/has-media' => ['label' => 'Has media'], // @translate
-            'common/advanced-search/has-original' => ['label' => 'Has original file', 'default' => false], // @translate
-            'common/advanced-search/has-thumbnails' => ['label' => 'Has thumbnails', 'default' => false], // @translate
-            'common/advanced-search/media-type' => ['label' => 'Media types'], // @translate
-            'common/advanced-search/visibility' => ['label' => 'Visibility', 'default' => false], // @translate
+            // Any resource type.
+            'common/advanced-search/sort' => [
+                'label' => 'Sort', // @translate
+            ],
+            'common/advanced-search/fulltext' => [
+                'label' => 'Full text', // @translate
+            ],
+            'common/advanced-search/properties' => [
+                'label' => 'Properties', // @translate
+            ],
+            'common/advanced-search/properties-improved' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Properties *', // @translate
+                'default_admin' => false,
+                'default_site' => false,
+                'improve' => 'common/advanced-search/properties',
+            ],
+            'common/advanced-search/filters' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Filters', // @translate
+            ],
+            'common/advanced-search/resource-class' => [
+                'label' => 'Classes', // @translate
+            ],
+            'common/advanced-search/resource-class-improved' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Classes *', // @translate
+                'default_admin' => false,
+                'default_site' => false,
+                'improve' => 'common/advanced-search/resource-class',
+            ],
+            'common/advanced-search/resource-template' => [
+                'label' => 'Templates', // @translate
+                'default_site' => false,
+            ],
+            'common/advanced-search/resource-template-improved' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Templates *', // @translate
+                'default_admin' => false,
+                'default_site' => false,
+                'improve' => 'common/advanced-search/resource-template',
+            ],
+            // Warning: this partial is managed separately by a core option.
+            'common/advanced-search/resource-template-restrict' => [
+                'label' => 'Templates (specific option "restricted")', // @translate
+                'default_admin' => false,
+                'default_site' => false,
+            ],
+
+            // Items.
+            'common/advanced-search/item-sets' => [
+                'label' => 'Item sets', // @translate
+                'resource_type' => ['items'],
+            ],
+            'common/advanced-search/item-sets-improved' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Item sets *', // @translate
+                'resource_type' => ['items'],
+                'default_site' => false,
+                'improve' => 'common/advanced-search/item-sets',
+            ],
+            'common/advanced-search/site' => [
+                'label' => 'default_site', // @translate
+                'resource_type' => ['items', 'item_sets'],
+                'default_site' => false,
+            ],
+            'common/advanced-search/site-improved' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Site *', // @translate
+                'resource_type' => ['items', 'item_sets'],
+                'default_admin' => false,
+                'default_site' => false,
+                'improve' => 'common/advanced-search/site',
+            ],
+            'common/advanced-search/has-media' => [
+                'label' => 'Has media (select)', // @translate
+                'resource_type' => ['items'],
+                'default_admin' => false,
+                'default_site' => false,
+            ],
+            'common/advanced-search/has-media-radio' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Has media (radio)', // @translate
+                'resource_type' => ['items'],
+            ],
+            'common/advanced-search/media-types' => [
+                'label' => 'Media types', // @translate
+                'resource_type' => ['items'],
+            ],
+
+            // Medias.
+            'common/advanced-search/media-type' => [
+                'label' => 'Media type (single)', // @translate
+                'resource_type' => ['media'],
+            ],
+            'common/advanced-search/media-type-improved' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Media types *', // @translate
+                'resource_type' => ['media'],
+                'default_admin' => false,
+                'default_site' => false,
+                'improve' => 'common/advanced-search/media-type',
+            ],
+
+            // Item sets.
+
+            // Other common.
+            'common/advanced-search/owner' => [
+                'label' => 'Owner', // @translate
+                'default_site' => false,
+            ],
+            'common/advanced-search/owner-improved' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Owner *', // @translate
+                'default_admin' => false,
+                'default_site' => false,
+                'improve' => 'common/advanced-search/owner',
+            ],
+            // Visibility filter was included in Omeka S v4.0.
+            'common/advanced-search/visibility' => [
+                'label' => 'Visibility (select)', // @translate
+                'default_admin' => false,
+                'default_site' => false,
+            ],
+            'common/advanced-search/visibility-radio' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Visibility (radio)', // @translate
+                'default_site' => false,
+            ],
+            'common/advanced-search/ids' => [
+                'label' => 'Id', // @translate
+            ],
+
+            // Common for this module.
+            'common/advanced-search/date-time' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Date time', // @translate
+                'default_site' => false,
+            ],
+            'common/advanced-search/has-original' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Has original file', // @translate
+                'default_site' => false,
+            ],
+            'common/advanced-search/has-thumbnails' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Has thumbnails', // @translate
+                'default_site' => false,
+            ],
+            'common/advanced-search/has-asset' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Has asset as thumbnail', // @translate
+                'default_site' => false,
+            ],
+            'common/advanced-search/asset' => [
+                'module' => 'AdvancedSearch',
+                'label' => 'Has a specific asset', // @translate
+                'default_site' => false,
+            ],
+
             // From module data type geometry.
-            'common/advanced-search/data-type-geography' => ['module' => 'DataTypeGeometry', 'label' => 'Geography', 'default' => false], // @translate
+            'common/advanced-search/data-type-geography' => [
+                'module' => 'DataTypeGeometry',
+                'label' => 'Geography', // @translate
+            ],
+
+            // From module dynamic item sets.
+            'common/advanced-search/item-set-is-dynamic' => [
+                'module' => 'Dynamic Item Sets',
+                'label' => 'Is dynamic item set', // @translate
+                'default_site' => false,
+                'resource_type' => ['item_sets'],
+            ],
+
             // From module numeric data type.
-            'common/numeric-data-types-advanced-search' => ['module' => 'NumericDataTypes', 'label' => 'Numeric', 'default' => false], // @translate
+            // The partial is used only in search items, but data are available
+            // anywhere.
+            'common/numeric-data-types-advanced-search' => [
+                'module' => 'NumericDataTypes',
+                'label' => 'Numeric', // @translate
+                'resource_type' => ['items'],
+            ],
         ],
     ],
 ];

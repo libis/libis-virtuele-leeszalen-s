@@ -103,7 +103,7 @@ $this->headScript()->appendFile($assetUrl('js/search.js', 'AdvancedSearch'), 'te
             
         <?php endif; ?>
 
-        <?= $this->searchForm($searchConfig, null, $skipFormAction) ?>
+        <?= $searchConfig->renderForm([$searchConfig, null, $skipFormAction]) ?>
 
         <?php if (isset($response)):
         $documentCount = $response->getTotalResults();
@@ -115,7 +115,7 @@ $this->headScript()->appendFile($assetUrl('js/search.js', 'AdvancedSearch'), 'te
         <div class="kul-card-color card card-gray">
             <div class="card-body">
            
-            <?= $partial('search/facets', [
+            <?= $partial('search/facets-list', [
                 'searchConfig' => $searchConfig,
                 'query' => $query,
                 'response' => $response,
@@ -151,24 +151,24 @@ $this->headScript()->appendFile($assetUrl('js/search.js', 'AdvancedSearch'), 'te
 
                 <div class="search-results-part search-results-list">
                     <?php if ($itemSetsCount): ?>
-                    <?= $partial('search/resource-list', [
+                    <?= $partial('search/results', [
                         'site' => $site,
                         'searchConfig' => $searchConfig,
                         'query' => $query,
                         'response' => $response,
                         'title' => sprintf($translatePlural('%s item set', '%s item sets', $itemSetsCount), $itemSetsCount),
-                        'resourceName' => 'item_sets',
+                        'resourceType' => 'item_sets',
                     ]) ?>
                     <?php endif; ?>
 
                     <?php if ($itemsCount): ?>
-                    <?= $partial('search/resource-list', [
+                    <?= $partial('search/results', [
                         'site' => $site,
                         'searchConfig' => $searchConfig,
                         'query' => $query,
                         'response' => $response,
                         'title' => sprintf($translatePlural('%s item', '%s items', $itemsCount), $itemsCount),
-                        'resourceName' => 'items',
+                        'resourceType' => 'items',
                         'resultPart' => 'header',
                     ]) ?>
                     <?php endif; ?>

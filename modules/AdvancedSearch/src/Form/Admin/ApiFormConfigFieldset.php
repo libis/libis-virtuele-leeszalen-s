@@ -19,6 +19,8 @@ class ApiFormConfigFieldset extends Fieldset
     {
         // Mapping between omeka api and search engine.
 
+        /** @see \AdvancedSearch\FormAdapter\ApiFormAdapter */
+
         $this
             ->setName('form')
             ->setLabel('Specific settings'); // @translate
@@ -341,10 +343,14 @@ class ApiFormConfigFieldset extends Fieldset
     public function skipDefaultElementsOrFieldsets(): array
     {
         return [
-            'search',
-            'autosuggest',
+            'request',
+            'q',
+            'index',
             // The form is overwrittable.
             // 'form',
+            // TODO Remove display?
+            'display',
+            'results',
             'sort',
             'facet',
         ];
@@ -352,14 +358,14 @@ class ApiFormConfigFieldset extends Fieldset
 
     protected function getAvailableFields(): array
     {
-        $options = [];
+        /** @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig */
         $searchConfig = $this->getOption('search_config');
-        $searchEngine = $searchConfig->engine();
-        $searchAdapter = $searchEngine->adapter();
-        if (empty($searchAdapter)) {
+        $engineAdapter = $searchConfig ? $searchConfig->engineAdapter() : null;
+        if (empty($engineAdapter)) {
             return [];
         }
-        $fields = $searchAdapter->setSearchEngine($searchEngine)->getAvailableFields();
+        $fields = $engineAdapter->getAvailableFields();
+        $options = [];
         foreach ($fields as $name => $field) {
             $options[$name] = $field['label'] ?? $name;
         }
@@ -368,14 +374,14 @@ class ApiFormConfigFieldset extends Fieldset
 
     protected function getAvailableSortFields(): array
     {
-        $options = [];
+        /** @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig */
         $searchConfig = $this->getOption('search_config');
-        $searchEngine = $searchConfig->engine();
-        $searchAdapter = $searchEngine->adapter();
-        if (empty($searchAdapter)) {
+        $engineAdapter = $searchConfig ? $searchConfig->engineAdapter() : null;
+        if (empty($engineAdapter)) {
             return [];
         }
-        $fields = $searchAdapter->setSearchEngine($searchEngine)->getAvailableSortFields();
+        $fields = $engineAdapter->getAvailableSortFields();
+        $options = [];
         foreach ($fields as $name => $field) {
             $options[$name] = $field['label'] ?? $name;
         }

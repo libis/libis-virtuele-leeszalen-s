@@ -2,7 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016
- * Copyright Daniel Berthereau, 2018-2024
+ * Copyright Daniel Berthereau, 2018-2025
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -36,16 +36,16 @@ use AdvancedSearch\Response;
 use Laminas\Log\LoggerAwareInterface;
 use Laminas\ServiceManager\ServiceLocatorInterface;
 
-/**
- * The signature uses "QuerierInterface" instead of "self" for compatibility with php < 7.4.
- */
 interface QuerierInterface extends LoggerAwareInterface
 {
-    public function setServiceLocator(ServiceLocatorInterface $serviceLocator): QuerierInterface;
+    /**
+     * @deprecated Use factories.
+     */
+    public function setServiceLocator(ServiceLocatorInterface $services): self;
 
-    public function setSearchEngine(SearchEngineRepresentation $engine): QuerierInterface;
+    public function setSearchEngine(SearchEngineRepresentation $searchEngine): self;
 
-    public function setQuery(Query $query): QuerierInterface;
+    public function setQuery(Query $query): self;
 
     /**
      * Process a search query.
@@ -56,6 +56,15 @@ interface QuerierInterface extends LoggerAwareInterface
      * Process a search query for suggestions.
      */
     public function querySuggestions(): Response;
+
+    /**
+     * Process a search query for lists, in particular to fill filters.
+     *
+     * Options (languages, order, limit) may be appended to query args.
+     *
+     * @return array Key-value pairs for name and label, generally the same.
+     */
+    public function queryValues(string $field): array;
 
     /**
      * Prepare a search query.

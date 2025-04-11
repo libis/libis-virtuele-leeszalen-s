@@ -2,7 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016
- * Copyright Daniel Berthereau, 2020-2024
+ * Copyright Daniel Berthereau, 2020-2025
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -67,7 +67,7 @@ class SearchConfig extends AbstractEntity
      *     length=190
      * )
      */
-    protected $path;
+    protected $slug;
 
     /**
      * @var SearchEngine
@@ -142,15 +142,15 @@ class SearchConfig extends AbstractEntity
         return $this->name;
     }
 
-    public function setPath(string $path): self
+    public function setSlug(string $slug): self
     {
-        $this->path = $path;
+        $this->slug = $slug;
         return $this;
     }
 
-    public function getPath(): string
+    public function getSlug(): string
     {
-        return $this->path;
+        return $this->slug;
     }
 
     public function setEngine(SearchEngine $engine): self

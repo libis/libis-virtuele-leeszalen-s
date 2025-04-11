@@ -16,7 +16,7 @@ class SearchEngineControllerTest extends \AdvancedSearchTest\Controller\SearchCo
         $this->assertResponseStatusCode(200);
 
         $this->assertQuery('input[name="o:name"]');
-        $this->assertQuery('select[name="o:adapter"]');
+        $this->assertQuery('select[name="o:engine_adapter"]');
     }
 
     public function testAddPostAction(): void
@@ -26,7 +26,7 @@ class SearchEngineControllerTest extends \AdvancedSearchTest\Controller\SearchCo
 
         $this->dispatch('/admin/search-manager/engine/add', 'POST', [
             'o:name' => 'TestEngine2',
-            'o:adapter' => 'test',
+            'o:engine_adapter' => 'test',
             'csrf' => $form->get('csrf')->getValue(),
         ]);
         $response = $this->api()->search('search_engines', [
@@ -42,7 +42,7 @@ class SearchEngineControllerTest extends \AdvancedSearchTest\Controller\SearchCo
         $this->dispatch($this->searchEngine->adminUrl('edit'));
         $this->assertResponseStatusCode(200);
 
-        $this->assertQuery('input[name="resources[]"]');
+        $this->assertQuery('input[name="resource_types[]"]');
     }
 
     public function testConfigurePostAction(): void
@@ -53,7 +53,7 @@ class SearchEngineControllerTest extends \AdvancedSearchTest\Controller\SearchCo
         ]);
 
         $this->dispatch($this->searchEngine->adminUrl('edit'), 'POST', [
-            'resources' => ['items', 'item_sets'],
+            'resource_types' => ['items', 'item_sets'],
             'csrf' => $form->get('csrf')->getValue(),
         ]);
         $this->assertRedirectTo('/admin/search-manager');

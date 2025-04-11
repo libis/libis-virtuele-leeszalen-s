@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 /*
  * Copyright BibLibre, 2016
- * Copyright Daniel Berthereau, 2018-2024
+ * Copyright Daniel Berthereau, 2018-2025
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -29,6 +29,7 @@
 
 namespace AdvancedSearch\Job;
 
+use AdvancedSearch\Api\Representation\SearchEngineRepresentation;
 use AdvancedSearch\Query;
 use Common\Stdlib\PsrMessage;
 use Doctrine\ORM\EntityManager;
@@ -36,72 +37,212 @@ use Omeka\Job\AbstractJob;
 
 class IndexSearch extends AbstractJob
 {
+    /**
+     * The number of resources to index by step.
+     *
+     * Use a small number to avoid memory issues when resources are big,
+     * included linked resources, medias, item sets, etc.
+     *
+     * @var int
+     */
     const BATCH_SIZE = 100;
+
+    /**
+     * @var \Omeka\Api\Manager
+     */
+    protected $api;
+
+    /**
+     * @var \Doctrine\ORM\EntityManager
+     */
+    protected $entityManager;
 
     /**
      * @var \Laminas\Log\Logger
      */
     protected $logger;
 
+    /**
+     * @var int
+     */
+    protected $batchSize = self::BATCH_SIZE;
+
+    /**
+     * @var array
+     */
+    protected $resourceIds = [];
+
+    /**
+     * @var array
+     */
+    protected $resourceTypes = [];
+
+    /**
+     * @var int
+     */
+    protected $resourcesOffset = 0;
+
+    /**
+     * @var array
+     */
+    protected $resourcesLimit = 0;
+
+    /**
+     * @var int
+     */
+    protected $sleepAfterLoop = 0;
+
+    /**
+     * @var int
+     */
+    protected $startResourceId = 0;
+
     public function perform(): void
     {
-        /**
-         * @var \Omeka\Api\Manager $api
-         * @var \Doctrine\ORM\EntityManager $entityManager
-         */
+        // TODO Paralelize independant search engines. Useless for now.
+
         $services = $this->getServiceLocator();
-
-        // Because this is an indexer that is used in background, another entity
-        // manager is used to avoid conflicts with the main entity manager, for
-        // example when the job is run in foreground or multiple resources are
-        // imported in bulk, so a flush() or a clear() will not be applied on
-        // the imported resources but only on the indexed resources.
-        $entityManager = $this->getNewEntityManager($services->get('Omeka\EntityManager'));
-
-        $apiAdapters = $services->get('Omeka\ApiAdapterManager');
-        $api = $services->get('Omeka\ApiManager');
+        $this->api = $services->get('Omeka\ApiManager');
         $this->logger = $services->get('Omeka\Logger');
-        $translator = $services->get('MvcTranslator');
 
         // The reference id is the job id for now.
         $referenceIdProcessor = new \Laminas\Log\Processor\ReferenceId();
         $referenceIdProcessor->setReferenceId('search/index/job_' . $this->job->getId());
         $this->logger->addProcessor($referenceIdProcessor);
 
-        $batchSize = self::BATCH_SIZE;
+        $searchEngineIds = $this->getArg('search_engine_ids');
 
-        $searchEngineId = $this->getArg('search_engine_id');
-        $startResourceId = (int) $this->getArg('start_resource_id');
-        $resourceIds = $this->getArg('resource_ids', []) ?: [];
+        $this->resourceIds = $this->getArg('resource_ids', []) ?: [];
+        $this->startResourceId = (int) $this->getArg('start_resource_id');
 
-        /** @var \AdvancedSearch\Api\Representation\SearchEngineRepresentation $searchEngine */
-        $searchEngine = $api->read('search_engines', $searchEngineId)->getContent();
-        $indexer = $searchEngine->indexer();
+        $this->resourcesLimit = $this->getArg('resources_limit');
+        $this->resourcesOffset = $this->getArg('resources_offset');
+
+        $this->batchSize = abs((int) $this->getArg('resources_by_batch')) ?: self::BATCH_SIZE;
+        $this->sleepAfterLoop = abs((int) $this->getArg('sleep_after_loop')) ?: 0;
+
+        $this->resourceTypes = $this->getArg('resource_types', [])
+            ?: $searchEngine->setting('resource_types', []);
+
+        $force = $this->getArg('force');
+
+        if (!$searchEngineIds) {
+            $this->logger->warn(
+                'No search engine is defined to be indexed.' // @translate
+            );
+            return;
+        }
+
+        // Quick check on resource types.
+
+        /** @var \AdvancedSearch\Api\Representation\SearchEngineRepresentation[] $searchEngines */
+        $searchEngines = $this->api->search('search_engines', ['id' => $searchEngineIds])->getContent();
+        $searchEnginesToProcess = [];
+        foreach ($searchEngines as $searchEngine) {
+            $indexer = $searchEngine->indexer();
+            foreach ($this->resourceTypes as $resourceType) {
+                if ($indexer->canIndex($resourceType)
+                    && in_array($resourceType, $searchEngine->setting('resource_types', []))
+                ) {
+                    $searchEnginesToProcess[$searchEngine->id()] = $searchEngine;
+                }
+            }
+        }
+        if (!count($searchEnginesToProcess)) {
+            $this->logger->warn(
+                'No search engine is defined to index the specified resource types.' // @translate
+            );
+            return;
+        }
+        $searchEngines = $searchEnginesToProcess;
+        unset($searchEnginesToProcess);
 
         // Clean resource ids to avoid check later.
-        $ids = array_filter(array_map('intval', $resourceIds));
-        if (count($resourceIds) !== count($ids)) {
-            $this->logger->notice(
+        $ids = array_values(array_filter(array_map('intval', $this->resourceIds)));
+        if (count($this->resourceIds) !== count($ids)) {
+            $this->logger->warn(
                 'Search index #{search_engine_id} ("{name}"): the list of resource ids contains invalid ids.', // @translate
                 ['search_engine_id' => $searchEngine->id(), 'name' => $searchEngine->name()]
             );
             return;
         }
-        $resourceIds = $ids;
-        unset($ids);
-        if ($resourceIds) {
-            $startResourceId = 1;
+
+        $listJobStatusesByIds = $services->get('ControllerPluginManager')->get('listJobStatusesByIds');
+        $listJobStatusesByIds = $listJobStatusesByIds(self::class, true, null, $this->job->getId());
+        if (count($listJobStatusesByIds)) {
+            if (!$force) {
+                $this->logger->err(
+                    'Search index #{search_engine_id} ("{name}"): There are already {total} other jobs "Index Search" (#{list}) and the current one is not forced.', // @translate
+                    [
+                        'search_engine_id' => $searchEngine->id(),
+                        'name' => $searchEngine->name(),
+                        'total' => count($listJobStatusesByIds),
+                        'list' => implode(', #', array_keys($listJobStatusesByIds)),
+                    ]
+                );
+                return;
+            }
+            $this->logger->warn(
+                'There are already {total} other jobs "Index Search". Slowdowns may occur on the site.', // @translate
+                ['total' => $listJobStatusesByIds]
+            );
         }
 
-        $resourceNames = $searchEngine->setting('resources', []);
-        $selectedResourceNames = $this->getArg('resource_names', []);
-        if ($selectedResourceNames) {
-            $resourceNames = array_intersect($resourceNames, $selectedResourceNames);
+        $this->resourceIds = $ids;
+        unset($ids);
+        if ($this->resourceIds) {
+            $this->startResourceId = 1;
         }
-        $resourceNames = array_filter($resourceNames, function ($resourceName) use ($indexer) {
-            return $indexer->canIndex($resourceName);
-        });
-        if (empty($resourceNames)) {
+        if ($this->startResourceId > 1) {
+            $this->logger->info(
+                'Reindexing starts at resource #{resource_id}.', // @translate
+                ['resource_id' => $this->startResourceId]
+            );
+        }
+
+        // Because this is an indexer that is used in background, another entity
+        // manager is used to avoid conflicts with the main entity manager when
+        // it is run in foreground or when multiple resources are imported in
+        // bulk and a sub-job is launched. So a flush() or a clear() will not be
+        // applied on the imported resources but only on the indexed ones.
+        $isBackend = empty($_SERVER['REQUEST_METHOD']);
+        if ($isBackend) {
+            $this->entityManager = $services->get('Omeka\EntityManager');
+            $this->logger->debug(
+                'Process done with the main entity manager' // @translate
+            );
+        } else {
+            $this->entityManager = $this->getNewEntityManager($services->get('Omeka\EntityManager'));
+            $this->logger->debug(
+                'Process done with a new entity manager' // @translate
+            );
+        }
+
+        $timeStart = microtime(true);
+
+        foreach ($searchEngines as $searchEngine) {
+            $this->indexSearchEngine($searchEngine);
+        }
+
+        $timeTotal = (int) (microtime(true) - $timeStart);
+
+        $this->logger->info(
+            'End of indexing. Execution time: {duration} seconds. Failed indexed resources should be checked manually.', // @translate
+            ['duration' => $timeTotal]
+        );
+    }
+
+    protected function indexSearchEngine(SearchEngineRepresentation $searchEngine): void
+    {
+        $indexer = $searchEngine->indexer();
+
+        $clearIndex = (bool) $this->getArg('clear_index');
+
+        $engineResourceTypes = $searchEngine->setting('resource_types', []);
+        $resourceTypes = array_intersect($engineResourceTypes, $this->resourceTypes);
+        $resourceTypes = array_filter($resourceTypes, fn ($resourceType) => $indexer->canIndex($resourceType));
+
+        if (empty($resourceTypes)) {
             $this->logger->notice(
                 'Search index #{search_engine_id} ("{name}"): there is no resource type to index or the indexation is not needed.', // @translate
                 ['search_engine_id' => $searchEngine->id(), 'name' => $searchEngine->name()]
@@ -109,20 +250,19 @@ class IndexSearch extends AbstractJob
             return;
         }
 
-        $totalJobs = $services->get('ControllerPluginManager')->get('totalJobs');
-        $totalJobs = $totalJobs(self::class, true);
-        $force = $this->getArg('force');
-        if ($totalJobs > 1) {
-            if (!$force) {
-                $this->logger->err(
-                    'Search index #{search_engine_id} ("{name}"): There are already {total} other jobs "Index Search" and the current one is not forced.', // @translate
-                    ['search_engine_id' => $searchEngine->id(), 'name' => $searchEngine->name(), 'total' => $totalJobs - 1]
-                );
-                return;
-            }
-            $this->logger->warn(
-                'There are already {total} other jobs "Index Search". Slowdowns may occur on the site.', // @translate
-                ['total' => $totalJobs - 1]
+        // Use the option set in the form if any, only when the search engine
+        // manage all visibilities.
+        $visibility = $searchEngine->setting('visibility');
+        $visibility = in_array($visibility, ['public', 'private']) ? $visibility : null;
+        if (!$visibility) {
+            $visibilityJob = $this->getArg('visibility');
+            $visibility = in_array($visibilityJob, ['public', 'private']) ? $visibilityJob : null;
+        }
+
+        if ($visibility) {
+            $this->logger->notice(
+                'Search index #{search_engine_id} ("{name}"): Only {visibility} resources will be indexed.', // @translate
+                ['search_engine_id' => $searchEngine->id(), 'name' => $searchEngine->name(), 'visibility' => $visibility]
             );
         }
 
@@ -133,47 +273,68 @@ class IndexSearch extends AbstractJob
             ['search_engine_id' => $searchEngine->id(), 'name' => $searchEngine->name()]
         );
 
-        $rNames = $resourceNames;
-        sort($rNames);
-        $fullClearIndex = empty($resourceIds)
-            && $startResourceId <= 0
-            && array_values($rNames) === ['item_sets', 'items'];
-
-        if ($fullClearIndex) {
-            $indexer->clearIndex();
-        } elseif (empty($resourceIds) && $startResourceId > 0) {
+        if ($clearIndex && empty($resourceTypes)) {
             $this->logger->info(
-                'Search index is not cleared: reindexing starts at resource #{resource_id}.', // @translate
-                ['resource_id' => $startResourceId]
+                'Search index is fully cleared.' // @translate
             );
+            $indexer->clearIndex();
         }
 
-        $resources = [];
         $totals = [];
-        foreach ($resourceNames as $resourceName) {
-            if (!$fullClearIndex && empty($resourceIds) && $startResourceId <= 0) {
+        foreach ($resourceTypes as $resourceType) {
+            if ($clearIndex) {
                 $query = new Query();
+                // Here, no need to init the aliases and aggregated fields
+                // because there is no site or admin and aliases are managed
+                // earlier or later.
                 $query
                     // By default the query process public resources only.
+                    // TODO Check the purpose of the check of isPublic here.
                     ->setIsPublic(false)
-                    ->setResources([$resourceName]);
+                    ->setResourceTypes([$resourceType]);
                 $indexer->clearIndex($query);
             }
 
-            $totals[$resourceName] = 0;
-            $searchConfig = 1;
-            $entityClass = $apiAdapters->get($resourceName)->getEntityClass();
-            $dql = "SELECT resource FROM $entityClass resource";
-            $parameter = null;
-            if (count($resourceIds)) {
+            $totals[$resourceType] = 0;
+
+            $args = [
+                'sort_by' => 'id',
+                'sort_order' => 'asc',
+            ];
+
+            if (count($this->resourceIds)) {
                 // The list of ids is cleaned above.
-                $dql .= ' WHERE resource.id IN (:resource_ids)';
-                $parameter = ['name' => 'resource_ids', 'bind' => $resourceIds, 'type' => \Doctrine\DBAL\Connection::PARAM_INT_ARRAY];
-            } elseif ($startResourceId) {
-                $dql .= ' WHERE resource.id >= :start_resource_id';
-                $parameter = ['name' => 'start_resource_id', 'bind' => $startResourceId, 'type' => \Doctrine\DBAL\ParameterType::INTEGER];
+                $args['id'] = $this->resourceIds;
+            } else {
+                $resourceQueryArgs = ['sort_by' => 'id', 'sort_order' => 'asc'];
+                if ($this->resourcesLimit) {
+                    $resourceQueryArgs['limit'] = $this->resourcesLimit;
+                }
+                if ($this->resourcesOffset) {
+                    $resourceQueryArgs['offset'] = $this->resourcesOffset;
+                }
+
+                $ids = $this->api->search($resourceType, $resourceQueryArgs, ['returnScalar' => 'id'])->getContent();
+                if ($this->startResourceId) {
+                    $ids = array_keys(array_filter($ids, fn ($id) => $id >= $this->startResourceId, ARRAY_FILTER_USE_KEY));
+                }
+                if (!count($ids)) {
+                    continue;
+                }
+                $args['id'] = $ids;
+                unset($ids);
             }
-            $dql .= " ORDER BY resource.id ASC";
+
+            if ($visibility) {
+                $args['is_public'] = $visibility === 'private' ? 0 : 1;
+            }
+
+            $loop = 1;
+            $resources = [];
+            $countResources = 0;
+            $totalToProcessForCurrentResourceType = count($args['id']);
+
+            $lastMemUsage = memory_get_usage();
 
             do {
                 if ($this->shouldStop()) {
@@ -184,20 +345,21 @@ class IndexSearch extends AbstractJob
                         );
                     } else {
                         $totalResults = [];
-                        foreach ($resourceNames as $resourceName) {
-                            $totalResults[] = (new PsrMessage(
-                                '{resource_name}: {count} indexed', // @translate
-                                ['resource_name' => $resourceName, 'count' => $totals[$resourceName]]
-                            ))->setTranslator($translator);
+                        foreach ($resourceTypes as $resourceType) {
+                            $totalResults[] = new PsrMessage(
+                                '{resource_type}: {count} indexed', // @translate
+                                ['resource_type' => $resourceType, 'count' => $totals[$resourceType]]
+                            );
                         }
+                        /** @var \Omeka\Entity\Resource $resource */
                         $resource = array_pop($resources);
                         $this->logger->warn(
-                            'Search index #{search_engine_id} ("{name}"): the indexing was stopped. Last indexed resource: {resource_name} #{resource_id}; {results}. Execution time: {duration} seconds.', // @translate
+                            'Search index #{search_engine_id} ("{name}"): the indexing was stopped. Last indexed resource: {resource_type} #{resource_id}; {results}. Execution time: {duration} seconds.', // @translate
                             [
                                 'search_engine_id' => $searchEngine->id(),
                                 'name' => $searchEngine->name(),
-                                'resource_name' => $resource->getResourceName(),
-                                'resource_id' => $resource->getId(),
+                                'resource_type' => $resource->resourceName(),
+                                'resource_id' => $resource->id(),
                                 'results' => implode('; ', $totalResults),
                                 'duration' => (int) (microtime(true) - $timeStart),
                             ]
@@ -206,33 +368,39 @@ class IndexSearch extends AbstractJob
                     return;
                 }
 
-                // TODO Use doctrine large iterable data-processing? See https://www.doctrine-project.org/projects/doctrine-orm/en/latest/reference/batch-processing.html#iterating-large-results-for-data-processing
-                $offset = $batchSize * ($searchConfig - 1);
-                $qb = $entityManager
-                    ->createQuery($dql)
-                    ->setFirstResult($offset)
-                    ->setMaxResults($batchSize);
-                if ($parameter) {
-                    $qb
-                        ->setParameter($parameter['name'], $parameter['bind'], $parameter['type']);
-                }
-                /** @var \Omeka\Entity\Resource[] $resources */
-                $resources = $qb->getResult();
+                $offset = $this->batchSize * ($loop - 1);
+                $args['offset'] = $offset;
+                $args['limit'] = $this->batchSize;
 
+                /** @var \Omeka\Api\Representation\AbstractResourceEntityRepresentation[] $resources */
+                $resources = $this->api->search($resourceType, $args)->getContent();
+
+                $countResources = count($resources);
                 $indexer->indexResources($resources);
 
-                ++$searchConfig;
-                $totals[$resourceName] += count($resources);
-                $entityManager->clear();
-            } while (count($resources) === $batchSize);
+                ++$loop;
+                $totals[$resourceType] += $countResources;
+
+                // FIXME Find why all resources are not cleared each loop.
+                $this->entityManager->clear();
+
+                // Useless in practice and need some seconds.
+                // gc_collect_cycles();
+
+                // May avoid issue with some badly configured firewall/proxy
+                // that limits access to Solr even internally.
+                if ($this->sleepAfterLoop) {
+                    sleep($this->sleepAfterLoop);
+                }
+            } while (($this->batchSize * ($loop - 1)) <= $totalToProcessForCurrentResourceType);
         }
 
         $totalResults = [];
-        foreach ($resourceNames as $resourceName) {
-            $totalResults[] = (new PsrMessage(
-                '{resource_name}: {count} indexed', // @translate
-                ['resource_name' => $resourceName, 'count' => $totals[$resourceName]]
-            ))->setTranslator($translator);
+        foreach ($resourceTypes as $resourceType) {
+            $totalResults[] = new PsrMessage(
+                '{resource_type}: {count} indexed', // @translate
+                ['resource_type' => $resourceType, 'count' => $totals[$resourceType]]
+            );
         }
 
         $timeTotal = (int) (microtime(true) - $timeStart);

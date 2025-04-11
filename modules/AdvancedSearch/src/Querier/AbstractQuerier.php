@@ -2,7 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016
- * Copyright Daniel Berthereau, 2017-2024
+ * Copyright Daniel Berthereau, 2017-2025
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -41,33 +41,39 @@ abstract class AbstractQuerier implements QuerierInterface
     use LoggerAwareTrait;
 
     /**
-     * @var ServiceLocatorInterface
+     * @var \Common\Stdlib\EasyMeta
+     */
+    protected $easyMeta;
+
+    /**
+     * @var \Laminas\ServiceManager\ServiceLocatorInterface
      */
     protected $services;
 
     /**
-     * @var SearchEngineRepresentation $engine
+     * @var \AdvancedSearch\Api\Representation\SearchEngineRepresentation
      */
-    protected $engine;
+    protected $searchEngine;
 
     /**
-     * @var Query
+     * @var \AdvancedSearch\Query
      */
     protected $query;
 
-    public function setServiceLocator(ServiceLocatorInterface $services): QuerierInterface
+    public function setServiceLocator(ServiceLocatorInterface $services): self
     {
         $this->services = $services;
+        $this->easyMeta = $services->get('Common\EasyMeta');
         return $this;
     }
 
-    public function setSearchEngine(SearchEngineRepresentation $engine): QuerierInterface
+    public function setSearchEngine(SearchEngineRepresentation $searchEngine): self
     {
-        $this->engine = $engine;
+        $this->searchEngine = $searchEngine;
         return $this;
     }
 
-    public function setQuery(Query $query): QuerierInterface
+    public function setQuery(Query $query): self
     {
         $this->query = $query;
         return $this;
@@ -76,6 +82,8 @@ abstract class AbstractQuerier implements QuerierInterface
     abstract public function query(): Response;
 
     abstract public function querySuggestions(): Response;
+
+    abstract public function queryValues(string $field): array;
 
     abstract public function getPreparedQuery();
 }

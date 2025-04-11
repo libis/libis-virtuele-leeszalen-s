@@ -18,15 +18,15 @@ $translatePlural = $plugins->get('translatePlural');
 $displayParts = [
     'search_filters' => 'header',
     'paginator' => 'header',
-    'per_pages' => 'header',
+    'per_page' => 'header',
     'sort' => 'header',
     'grid_list' => 'header',
     'grid_list_mode' => 'auto',
 ];
-$displayParts = $searchConfig ? $searchConfig->setting('display', $displayParts) : $displayParts;
+$displayParts = $searchConfig ? $searchConfig->setting('results', $displayParts) : $displayParts;
 $displayParts = array_filter($displayParts, function ($v) use ($resultPart) { return in_array($v, [$resultPart, 'both']); });
 
-if (isset($displayParts['per_pages']) && $perPages = $searchConfig->subSetting('pagination', 'per_pages')) {
+if (isset($displayParts['per_page']) && $perPages = $searchConfig->subSetting('pagination', 'per_page')) {
     // Don't display unmanaged per page from the query, but set the default Omeka per page.
     // Can be simplified in a theme.
     $setting = $plugins->get('setting');
@@ -38,7 +38,7 @@ if (isset($displayParts['per_pages']) && $perPages = $searchConfig->subSetting('
 ?>
 
 <?php if (isset($displayParts['search_filters'])): ?>
-<?= $this->searchingFilters($searchConfig, $query, ['template' => 'common/search-filters-links']) ?>
+    <?= $searchConfig->renderSearchFilters($query, ['template' => 'common/search-filters-links']) ?>
 <?php endif; ?>
 
 <?php if (isset($displayParts['paginator'])): ?>
@@ -61,7 +61,7 @@ if (isset($displayParts['per_pages']) && $perPages = $searchConfig->subSetting('
 <?= $this->searchSortSelector($query, $sortFields) ?>
 <?php endif; ?> -->
 
-<?php if (isset($displayParts['grid_list']) && ($gridListMode = $searchConfig->subSetting('display', 'grid_list_mode', 'auto')) && !in_array($gridListMode, ['list_only', 'grid_only'])): ?>
+<?php if (isset($displayParts['grid_list']) && ($gridListMode = $searchConfig->subSetting('results', 'grid_list_mode', 'auto')) && !in_array($gridListMode, ['list_only', 'grid_only'])): ?>
 <div class="search-results-display">
     <a class="search-view-type search-view-type-list<?= $gridListMode === 'list' ? ' active' : '' ?>" href="#"><?= $translate('list') ?></a>
     |

@@ -2,7 +2,7 @@
 
 /*
  * Copyright BibLibre, 2016-2017
- * Copyright Daniel Berthereau, 2017-2024
+ * Copyright Daniel Berthereau, 2017-2025
  *
  * This software is governed by the CeCILL license under French law and abiding
  * by the rules of distribution of free software.  You can use, modify and/ or
@@ -40,6 +40,9 @@ use Laminas\View\Model\ViewModel;
 
 class SearchController extends AbstractActionController
 {
+    /**
+     * @throws \Omeka\Api\Exception\NotFoundException for item set.
+     */
     public function searchAction()
     {
         $searchConfigId = (int) $this->params('id');
@@ -50,18 +53,24 @@ class SearchController extends AbstractActionController
             $siteSettings = $this->siteSettings();
             $siteSearchConfigs = $siteSettings->get('advancedsearch_configs', []);
             if (!in_array($searchConfigId, $siteSearchConfigs)) {
+                $this->logger()->err(
+                    'The search engine {search_slug} is not available in site {site_slug}. Check site settings or search config.', // @translate
+                    ['search_slug' => $this->params('search-slug'), 'site_slug' => $site->slug()]
+                );
                 return $this->notFoundAction();
             }
             // Check if it is an item set redirection.
-            $itemSetId = (int) $this->params('item-set-id');
+            $itemSetId = (int) $this->params()->fromRoute('item-set-id');
             // This is just a check: if set, mvc listeners add item_set['id'][].
             // @see \AdvancedSearch\Mvc\MvcListeners::redirectItemSetToSearch()
-            if ($itemSetId) {
-                // May throw a not found exception.
-                $this->api()->read('item_sets', $itemSetId);
-            }
+            // May throw a not found exception.
+            // TODO Use site item set ?
+            $itemSet = $itemSetId
+                ? $this->api()->read('item_sets', ['id' => $itemSetId])->getContent()
+                : null;
         } else {
             $site = null;
+            $itemSet = null;
         }
 
         // The config is required, else there is no form.
@@ -70,25 +79,30 @@ class SearchController extends AbstractActionController
         $searchConfig = $this->api()->read('search_configs', $searchConfigId)->getContent();
 
         // TODO Factorize with rss output below.
+        /** @see \AdvancedSearch\FormAdapter\AbstractFormAdapter::renderForm() */
         $view = new ViewModel([
+            'site' => $site,
             // The form is set via searchConfig.
             'searchConfig' => $searchConfig,
-            'site' => $site,
+            'itemSet' => $itemSet,
             // Set a default empty query and response to simplify view.
+            // They will be filled in formAdapter.
             'query' => new Query,
             'response' => new Response,
         ]);
 
+        $template = $isSiteRequest ? $searchConfig->subSetting('results', 'template') : null;
+        if ($template) {
+            $view->setTemplate($template);
+        }
+
         $request = $this->params()->fromQuery();
 
-        // Here, only the csrf is needed, if any.
-        $validateForm = (bool) $searchConfig->subSetting('search', 'validate_form');
-        if ($validateForm) {
-            // Check csrf issue.
-            $request = $this->validateSearchRequest($searchConfig, $request);
-            if ($request === false) {
-                return $view;
-            }
+        // On an item set page, only one item set can be used and the page
+        // should limit results to it.
+        // With the module Advanced Search, the name of the arg is "item_set".
+        if ($itemSet) {
+            $request['item_set'] = $itemSet->id();
         }
 
         // The form may be empty for a direct query.
@@ -96,36 +110,45 @@ class SearchController extends AbstractActionController
         $hasForm = $formAdapter ? (bool) $formAdapter->getFormClass() : false;
         $isJsonQuery = !$hasForm;
 
+        // If wanted, only the csrf is needed and checked, if any.
+        if (!$formAdapter->validateRequest($request)) {
+            return $view;
+        }
+
         // Check if the query is empty and use the default query in that case.
         // So the default query is used only on the search config.
-        [$request, $isEmptyRequest] = $this->cleanRequest($request);
+        $request = $formAdapter->cleanRequest($request);
+        $isEmptyRequest = $formAdapter->isEmptyRequest($request);
         if ($isEmptyRequest) {
-            $defaultResults = $searchConfig->subSetting('search', 'default_results') ?: 'default';
+            $defaultResults = $searchConfig->subSetting('request', 'default_results') ?: 'default';
             switch ($defaultResults) {
                 case 'none':
                     $defaultQuery = '';
                     $defaultQueryPost = '';
                     break;
                 case 'query':
-                    $defaultQuery = $searchConfig->subSetting('search', 'default_query') ?: '';
-                    $defaultQueryPost = $searchConfig->subSetting('search', 'default_query_post') ?: '';
+                    $defaultQuery = $searchConfig->subSetting('request', 'default_query') ?: '';
+                    $defaultQueryPost = $searchConfig->subSetting('request', 'default_query_post') ?: '';
                     break;
                 case 'default':
                 default:
                     // "*" means the default query managed by the search engine.
                     $defaultQuery = '*';
-                    $defaultQueryPost = $searchConfig->subSetting('search', 'default_query_post') ?: '';
+                    $defaultQueryPost = $searchConfig->subSetting('request', 'default_query_post') ?: '';
                     break;
             }
             if ($defaultQuery === '' && $defaultQueryPost === '') {
                 if ($isJsonQuery) {
                     return new JsonModel([
-                        'status' => 'error',
-                        'message' => 'No query.', // @translate
+                        'status' => 'fail',
+                        'data' => [
+                            'query' => $this->translate('No query.'), // @translate
+                        ],
                     ]);
                 }
                 return $view;
             }
+
             $parsedQuery = [];
             if ($defaultQuery) {
                 parse_str($defaultQuery, $parsedQuery);
@@ -140,56 +163,52 @@ class SearchController extends AbstractActionController
             $request = $parsedQuery + $request + $parsedQueryPost;
         }
 
-        $result = $this->searchRequestToResponse($request, $searchConfig, $site);
-        if ($result['status'] === 'fail') {
-            // Currently only "no query".
+        $response = $formAdapter->toResponse($request, $site);
+        if (!$response->isSuccess()) {
+            $this->getResponse()->setStatusCode(\Laminas\Http\Response::STATUS_CODE_500);
+            $msg = $response->getMessage();
             if ($isJsonQuery) {
                 return new JsonModel([
                     'status' => 'error',
-                    'message' => 'No query.', // @translate
+                    'message' => $this->translate($msg ?: 'An error occurred.'), // @translate
                 ]);
+            }
+            if ($msg) {
+                $this->messenger()->addError($msg);
             }
             return $view;
         }
 
-        if ($result['status'] === 'error') {
-            if ($isJsonQuery) {
-                return new JsonModel($result);
-            }
-            $this->messenger()->addError($result['message']);
-            return $view;
-        }
+        // Warning: The service Paginator is not a shared service: each instance
+        // is a new one. Furthermore, the delegator SitePaginatorFactory is not
+        // declared in the main config and only used in Omeka MvcListeners().
+
+        /** @see \Omeka\Mvc\Controller\Plugin\Paginator */
+        $this->paginator(
+            $response->getTotalResults(),
+            $response->getCurrentPage(),
+            $response->getPerPage()
+        );
 
         if ($isJsonQuery) {
-            /** @var \AdvancedSearch\Response $response */
-            $response = $result['data']['response'];
-            if (!$response) {
-                $this->getResponse()->setStatusCode(\Laminas\Http\Response::STATUS_CODE_500);
-                return new JsonModel([
-                    'status' => 'error',
-                    'message' => 'An error occurred.', // @translate
-                ]);
-            }
-
-            if (!$response->isSuccess()) {
-                $this->getResponse()->setStatusCode(\Laminas\Http\Response::STATUS_CODE_500);
-                return new JsonModel([
-                    'status' => 'error',
-                    'message' => $response->getMessage(),
-                ]);
-            }
-
-            $engineSettings = $searchConfig->engine()->settings();
+            $searchEngineSettings = $searchConfig->searchEngine()->settings();
             $result = [];
-            foreach ($engineSettings['resources'] as $resource) {
-                $result[$resource] = $response->getResults($resource);
+            foreach ($searchEngineSettings['resource_types'] as $resourceType) {
+                $result[$resourceType] = $response->getResults($resourceType);
             }
             return new JsonModel($result);
         }
 
+        $vars = [
+            'searchConfig' => $searchConfig,
+            'itemSet' => $itemSet,
+            'site' => $site,
+            'query' => $response->getQuery(),
+            'response' => $response,
+        ];
+
         return $view
-            ->setVariables($result['data'], true)
-            ->setVariable('searchConfig', $searchConfig);
+            ->setVariables($vars, true);
     }
 
     public function suggestAction()
@@ -197,11 +216,14 @@ class SearchController extends AbstractActionController
         if (!$this->getRequest()->isXmlHttpRequest()) {
             return new JsonModel([
                 'status' => 'error',
-                'message' => 'This action requires an ajax request.', // @translate
+                'message' => $this->translate('This action requires an ajax request.'), // @translate
             ]);
         }
 
-        $q = (string) $this->params()->fromQuery('q');
+        $params = $this->params();
+
+        // Some search engines may use trailing spaces, so keep them.
+        $q = (string) $params->fromQuery('q');
         if (!strlen($q)) {
             return new JsonModel([
                 'status' => 'success',
@@ -212,7 +234,7 @@ class SearchController extends AbstractActionController
             ]);
         }
 
-        $searchConfigId = (int) $this->params('id');
+        $searchConfigId = (int) $params->fromRoute('id');
 
         $isSiteRequest = $this->status()->isSiteRequest();
         if ($isSiteRequest) {
@@ -222,7 +244,7 @@ class SearchController extends AbstractActionController
             if (!in_array($searchConfigId, $siteSearchConfigs)) {
                 return new JsonModel([
                     'status' => 'error',
-                    'message' => 'Not a search page for this site.', // @translate
+                    'message' => $this->translate('Not a search page for this site.'), // @translate
                 ]);
             }
             // TODO Manage item set redirection.
@@ -231,34 +253,24 @@ class SearchController extends AbstractActionController
         }
 
         /** @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig */
-        $searchConfig = $this->api()->read('search_configs', $searchConfigId)->getContent();
-
-        // The suggester may be the url, but in that case it's pure js and the
-        // query doesn't come here (for now).
-        $suggesterId = $searchConfig->subSetting('autosuggest', 'suggester');
-        if (!$suggesterId) {
-            return new JsonModel([
-                'status' => 'error',
-                'message' => 'The search page has no suggester.', // @translate
-            ]);
-        }
-
         try {
-            /** @var \AdvancedSearch\Api\Representation\SearchSuggesterRepresentation $suggester */
-            $suggester = $this->api()->read('search_suggesters', $suggesterId)->getContent();
+            $searchConfig = $this->api()->read('search_configs', $searchConfigId)->getContent();
         } catch (\Omeka\Api\Exception\NotFoundException $e) {
             return new JsonModel([
                 'status' => 'error',
-                'message' => 'The search page has no more suggester.', // @translate
+                'message' => $this->translate('The seach engine is not available.'), // @translate
             ]);
         }
 
-        $response = $suggester->suggest($q, $site);
+        $field = $params->fromQuery('field');
+
+        $response = $searchConfig->suggest($q, $field, $site);
+
         if (!$response) {
             $this->getResponse()->setStatusCode(\Laminas\Http\Response::STATUS_CODE_500);
             return new JsonModel([
                 'status' => 'error',
-                'message' => 'An error occurred.', // @translate
+                'message' => $this->translate('An error occurred.'), // @translate
             ]);
         }
 
@@ -301,7 +313,7 @@ class SearchController extends AbstractActionController
                 return $this->notFoundAction();
             }
             // Check if it is an item set redirection.
-            $itemSetId = (int) $this->params('item-set-id');
+            $itemSetId = (int) $this->params()->fromRoute('item-set-id');
             // This is just a check: if set, mvc listeners add item_set['id'][].
             // @see \AdvancedSearch\Mvc\MvcListeners::redirectItemSetToSearch()
             if ($itemSetId) {
@@ -419,101 +431,7 @@ class SearchController extends AbstractActionController
     }
 
     /**
-     * Get the request from the query and check it according to the search page.
-     *
-     * In fact, only check the csrf, but the csrf is removed from the form in
-     * most of the cases, so it is useless.
-     *
-     * @todo Factorize with \AdvancedSearch\Site\BlockLayout\SearchingForm::getSearchRequest()
-     * @todo Clarify process of force validation if it is really useful.
-     *
-     * @return array|bool
-     */
-    protected function validateSearchRequest(
-        SearchConfigRepresentation $searchConfig,
-        array $request
-    ) {
-        // Only validate the csrf.
-        // Note: The search engine is used to display item sets too via the mvc
-        // redirection. In that case, there is no csrf element, so no check to
-        // do.
-        if (array_key_exists('csrf', $request)) {
-            $form = $searchConfig->form([
-                'variant' => 'csrf',
-            ]);
-            $form->setData($request);
-            if (!$form->isValid()) {
-                $messages = $form->getMessages();
-                if (isset($messages['csrf'])) {
-                    $this->messenger()->addError('Invalid or missing CSRF token'); // @translate
-                    return false;
-                }
-            }
-        }
-        return $request;
-    }
-
-    /**
-     * Remove all empty values (zero length strings) and check empty request.
-     *
-     * @todo Factorize with \AdvancedSearch\Mvc\Controller\Plugin\SearchRequestToResponse::cleanRequest()
-     * @see \AdvancedSearch\Mvc\Controller\Plugin\SearchRequestToResponse::cleanRequest()
-     *
-     * @return array First key is the cleaned request, the second a bool to
-     * indicate if it is empty.
-     */
-    protected function cleanRequest(array $request): array
-    {
-        // They should be already removed.
-        unset($request['csrf'], $request['submit']);
-
-        $this->arrayFilterRecursive($request);
-
-        $checkRequest = array_diff_key(
-            $request,
-            [
-                // @see \Omeka\Api\Adapter\AbstractEntityAdapter::limitQuery().
-                'page' => null,
-                'per_page' => null,
-                'limit' => null,
-                'offset' => null,
-                // @see \Omeka\Api\Adapter\AbstractEntityAdapter::search().
-                'sort_by' => null,
-                'sort_order' => null,
-                // Used by Search.
-                'resource_type' => null,
-                'sort' => null,
-            ]
-        );
-
-        return [
-            $request,
-            !count($checkRequest),
-        ];
-    }
-
-    /**
-     * Remove zero-length values or an array, recursively.
-     *
-     * @todo Factorize with \AdvancedSearch\Mvc\Controller\Plugin\SearchRequestToResponse::arrayFilterRecursive()
-     */
-    protected function arrayFilterRecursive(array &$array): array
-    {
-        foreach ($array as $key => $value) {
-            if (is_array($value)) {
-                $array[$key] = $this->arrayFilterRecursive($value);
-                if (!count($array[$key])) {
-                    unset($array[$key]);
-                }
-            } elseif (!strlen(trim((string) $array[$key]))) {
-                unset($array[$key]);
-            }
-        }
-        return $array;
-    }
-
-    /**
-     * Fill each entry according to the search query.
+     * Fill each rss entry according to the search query.
      *
      * Adaptation of module Feed.
      * @see \Feed\Controller\FeedController::appendEntriesDynamic()
@@ -546,33 +464,36 @@ class SearchController extends AbstractActionController
         $currentSiteSlug = $currentSite->slug();
 
         $controller = $this->params()->fromRoute('resource-type', 'item');
-        $mainResourceName = $controllersToApi[$controller] ?? 'items';
+        $mainResourceType = $controllersToApi[$controller] ?? 'items';
 
         // TODO Factorize to get results directly.
 
         $site = $currentSite;
 
+        $formAdapter = $searchConfig->formAdapter();
+
         $request = $this->params()->fromQuery();
 
         // Check if the query is empty and use the default query in that case.
         // So the default query is used only on the search config.
-        [$request, $isEmptyRequest] = $this->cleanRequest($request);
+        $request = $formAdapter->cleanRequest($request);
+        $isEmptyRequest = $formAdapter->isEmptyRequest($request);
         if ($isEmptyRequest) {
-            $defaultResults = $searchConfig->subSetting('search', 'default_results') ?: 'default';
+            $defaultResults = $searchConfig->subSetting('request', 'default_results') ?: 'default';
             switch ($defaultResults) {
                 case 'none':
                     $defaultQuery = '';
                     $defaultQueryPost = '';
                     break;
                 case 'query':
-                    $defaultQuery = $searchConfig->subSetting('search', 'default_query') ?: '';
-                    $defaultQueryPost = $searchConfig->subSetting('search', 'default_query_post') ?: '';
+                    $defaultQuery = $searchConfig->subSetting('request', 'default_query') ?: '';
+                    $defaultQueryPost = $searchConfig->subSetting('request', 'default_query_post') ?: '';
                     break;
                 case 'default':
                 default:
                     // "*" means the default query managed by the search engine.
                     $defaultQuery = '*';
-                    $defaultQueryPost = $searchConfig->subSetting('search', 'default_query_post') ?: '';
+                    $defaultQueryPost = $searchConfig->subSetting('request', 'default_query_post') ?: '';
                     break;
             }
             if ($defaultQuery === '' && $defaultQueryPost === '') {
@@ -592,20 +513,13 @@ class SearchController extends AbstractActionController
             $request = $parsedQuery + $request + $parsedQueryPost;
         }
 
-        $result = $this->searchRequestToResponse($request, $searchConfig, $site);
-        if ($result['status'] === 'fail'
-            || $result['status'] === 'error'
-        ) {
-            return;
-        }
-
         /** @var \AdvancedSearch\Response $response */
-        $response = $result['data']['response'];
-        if (!$response) {
+        $response = $formAdapter->toResponse($request, $site);
+        if (!$response->isSuccess()) {
             return;
         }
 
-        $resources = $response->getResources($mainResourceName);
+        $resources = $response->getResources($mainResourceType);
         foreach ($resources as $resource) {
             // Manage the case where the main resource is "resource".
             $resourceName = $resource->resourceName();

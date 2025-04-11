@@ -14,21 +14,37 @@ class AbstractFacetTree extends AbstractFacet
      */
     protected $thesaurus;
 
-    protected $isTree = true;
-
     /**
      * @var array
      */
     protected $tree;
 
+    public function __invoke(?string $facetField, array $facetValues, array $options = [], bool $asData = false)
+    {
+        $view = $this->getView();
+        $plugins = $view->getHelperPluginManager();
+        if ($plugins->has('itemSetsTree')) {
+            $this->itemSetsTree = $plugins->get('itemSetsTree');
+        }
+        if ($plugins->has('thesaurus')) {
+            $this->thesaurus = $plugins->get('thesaurus')();
+        }
+        return parent::__invoke($facetField, $facetValues, $options, $asData);
+    }
+
     protected function prepareFacetData(string $facetField, array $facetValues, array $options): array
     {
-        $isItemSetsTree = $this->isTree && substr($facetField, 0, 14) === 'item_sets_tree' /*&& in_array($facetField, ['item_set', 'item_set_id']) */;
+        $facetType = $options['type'] ?? null;
+        $isItemSetsTree = $this->itemSetsTree
+            && substr($facetField, 0, 14) === 'item_sets_tree';
+            // && in_array($facetField, ['item_set', 'item_set_id']);
+        $isThesaurus = $this->thesaurus
+            && $facetType === 'Thesaurus';
         if ($isItemSetsTree) {
             $this->tree = $this->itemSetsTreeQuick();
             $result = parent::prepareFacetData($facetField, $facetValues, $options);
             $result['facetValues'] = $this->itemSetsTreeReorderFacets($result['facetValues']);
-        } elseif ($this->isTree && $options['facets'][$facetField]['type'] === 'Thesaurus') {
+        } elseif ($isThesaurus) {
             $this->tree = $this->thesaurusQuick($facetField, $options);
             $result = parent::prepareFacetData($facetField, $facetValues, $options);
             $result['facetValues'] = $this->thesaurusReorderAndCompleteFacets($facetField, $result['facetValues'], $options);
@@ -75,19 +91,20 @@ class AbstractFacetTree extends AbstractFacet
             : 'resource.title';
 
         // TODO Use query builder.
+        // TODO Translate title.
         $sql = <<<SQL
-SELECT
-    item_sets_tree_edge.item_set_id,
-    item_sets_tree_edge.item_set_id AS "id",
-    item_sets_tree_edge.parent_item_set_id AS "parent",
-    item_sets_tree_edge.rank AS "rank",
-    resource.title as "title"
-FROM item_sets_tree_edge
-JOIN resource ON resource.id = item_sets_tree_edge.item_set_id
-WHERE item_sets_tree_edge.item_set_id IN (:ids)
-GROUP BY resource.id
-ORDER BY $sortingMethodSql ASC;
-SQL;
+            SELECT
+                item_sets_tree_edge.item_set_id,
+                item_sets_tree_edge.item_set_id AS "id",
+                item_sets_tree_edge.parent_item_set_id AS "parent",
+                item_sets_tree_edge.rank AS "rank",
+                resource.title as "title"
+            FROM item_sets_tree_edge
+            JOIN resource ON resource.id = item_sets_tree_edge.item_set_id
+            WHERE item_sets_tree_edge.item_set_id IN (:ids)
+            GROUP BY resource.id
+            ORDER BY $sortingMethodSql ASC;
+            SQL;
         $flatTree = $connection->executeQuery($sql, ['ids' => array_keys($itemSetTitles)], ['ids' => $connection::PARAM_INT_ARRAY])->fetchAllAssociativeIndexed();
 
         // Use integers or string to simplify comparaisons.
@@ -124,13 +141,9 @@ SQL;
 
         // Order by sorting method.
         if ($sortingMethod === 'rank') {
-            $sortingFunction = function ($a, $b) use ($structure) {
-                return $structure[$a]['rank'] - $structure[$b]['rank'];
-            };
+            $sortingFunction = fn ($a, $b) => $structure[$a]['rank'] - $structure[$b]['rank'];
         } else {
-            $sortingFunction = function ($a, $b) use ($structure) {
-                return strcmp($structure[$a]['title'], $structure[$b]['title']);
-            };
+            $sortingFunction = fn ($a, $b) => strcmp($structure[$a]['title'], $structure[$b]['title']);
         }
 
         foreach ($structure as &$node) {
@@ -267,11 +280,12 @@ SQL;
      */
     protected function thesaurusQuick(string $facetField, array $options): ?array
     {
-        $facetOptions = $options['facets'][$facetField]['options'];
-        $thesaurusId = empty($facetOptions['id']) && empty($facetOptions['thesaurus'])
-            ? (int) reset($facetOptions)
-            : (int) ($facetOptions['thesaurus'] ?? $facetOptions['id'] ?? 0);
+        $thesaurusId = (int) ($options['options']['thesaurus'] ?? 0);
         if (!$thesaurusId) {
+            $this->logger->__invoke()->err(
+                'For facet "{field}", the thesaurus is not defined. Set it as option thesaurus = id.', // @translate
+                ['field' => $facetField]
+            );
             return null;
         }
         $this->thesaurus->__invoke($thesaurusId);
@@ -313,7 +327,7 @@ SQL;
 
         // Prepend ancestors to each facet.
         $result = [];
-        $isFacetModeDirect = ($options['mode'] ?? '') === 'link';
+        $isFacetModeDirect = in_array($options['mode'] ?? null, ['link', 'js']);
         foreach (array_intersect_key($treeValues, $facetValuesByLabels) as $facetLabel => $treeId) {
             $treeElement = $this->tree[$treeId];
             if ($treeElement['top']) {

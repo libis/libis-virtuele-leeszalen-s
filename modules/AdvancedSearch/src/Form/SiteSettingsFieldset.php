@@ -3,26 +3,17 @@
 namespace AdvancedSearch\Form;
 
 use Common\Form\Element as CommonElement;
-use Laminas\Form\Element;
 use Laminas\Form\Fieldset;
-use Omeka\Settings\AbstractSettings;
+use Omeka\Form\Element as OmekaElement;
 
 class SiteSettingsFieldset extends Fieldset
 {
-    /**
-     * @var AbstractSettings
-     */
-    protected $settings = null;
+    use TraitCommonSettings;
 
     /**
      * @var array
      */
     protected $searchConfigs = [];
-
-    /**
-     * @var array
-     */
-    protected $defaultSearchFields = [];
 
     /**
      * Warning: there is a core fieldset "Search" (before Omeka v4).
@@ -38,33 +29,11 @@ class SiteSettingsFieldset extends Fieldset
 
     public function init(): void
     {
-        $defaultSelectedFields = [];
-        foreach ($this->defaultSearchFields as $key => $defaultSearchField) {
-            if (!array_key_exists('default', $defaultSearchField) || $defaultSearchField['default'] === true) {
-                $defaultSelectedFields[] = $key;
-            }
-            $this->defaultSearchFields[$key] = $defaultSearchField['label'] ?? $key;
-        }
-
-        $searchFields = $this->settings->get('advancedsearch_search_fields') ?: $defaultSelectedFields;
-
         $this
             ->setAttribute('id', 'advanced-search')
             ->setOption('element_groups', $this->elementGroups)
-            ->add([
-                'name' => 'advancedsearch_search_fields',
-                'type' => CommonElement\OptionalMultiCheckbox::class,
-                'options' => [
-                    'element_group' => 'search',
-                    'label' => 'Display only following fields', // @translate
-                    'value_options' => $this->defaultSearchFields,
-                    'use_hidden_element' => true,
-                ],
-                'attributes' => [
-                    'id' => 'advancedsearch_search_fields',
-                    'value' => $searchFields,
-                ],
-            ])
+
+            ->initSearchFields()
 
             ->add([
                 'name' => 'advancedsearch_main_config',
@@ -91,38 +60,81 @@ class SiteSettingsFieldset extends Fieldset
                     'id' => 'advancedsearch_configs',
                 ],
             ])
-            // TODO Move the option to redirect item set to search page or a search page setting?
+            // TODO Move these options to redirect item set to search page or a search page setting?
             ->add([
-                'name' => 'advancedsearch_redirect_itemset',
-                'type' => Element\Checkbox::class,
+                'name' => 'advancedsearch_redirect_itemset_browse',
+                'type' => CommonElement\OptionalItemSetSelect::class,
                 'options' => [
                     'element_group' => 'advanced_search',
-                    'label' => 'Redirect item set page to search', // @translate
-                    'info' => 'By default, item-set/show is redirected to item/browse. This option redirects it to the search page.', // @translate
+                    'label' => 'Redirect item sets to item/browse', // @translate
+                    'empty_option' => '',
+                    'prepend_value_options' => [
+                        'all' => 'All item sets', // @translate
+                    ],
                 ],
                 'attributes' => [
-                    'id' => 'advancedsearch_redirect_itemset',
-                    'value' => true,
+                    'id' => 'advancedsearch_redirect_itemset_browse',
+                    'multiple' => true,
+                    'class' => 'chosen-select',
+                    'data-placeholder' => 'Select item sets…', // @translate
+                ],
+            ])
+            ->add([
+                'name' => 'advancedsearch_redirect_itemset_search',
+                'type' => CommonElement\OptionalItemSetSelect::class,
+                'options' => [
+                    'element_group' => 'advanced_search',
+                    'label' => 'Redirect item sets to search', // @translate
+                    'empty_option' => '',
+                    'prepend_value_options' => [
+                        'all' => 'All item sets', // @translate
+                    ],
+                ],
+                'attributes' => [
+                    'id' => 'advancedsearch_redirect_itemset_search',
+                    'multiple' => true,
+                    'class' => 'chosen-select',
+                    'data-placeholder' => 'Select item sets…', // @translate
+                ],
+            ])
+            ->add([
+                'name' => 'advancedsearch_redirect_itemset_search_first',
+                'type' => CommonElement\OptionalItemSetSelect::class,
+                'options' => [
+                    'element_group' => 'advanced_search',
+                    'label' => 'Redirect item sets to search (display record only on first page, old default Omeka)', // @translate
+                    'empty_option' => '',
+                    'prepend_value_options' => [
+                        'all' => 'All item sets', // @translate
+                    ],
+                ],
+                'attributes' => [
+                    'id' => 'advancedsearch_redirect_itemset_search_first',
+                    'multiple' => true,
+                    'class' => 'chosen-select',
+                    'data-placeholder' => 'Select item sets…', // @translate
+                ],
+            ])
+            ->add([
+                'name' => 'advancedsearch_redirect_itemset_page_url',
+                'type' => OmekaElement\ArrayTextarea::class,
+                'options' => [
+                    'element_group' => 'advanced_search',
+                    'label' => 'Redirect any item set to a page or a url', // @translate
+                    'info' => 'Set the item set id, then the sign "=", then a page slug or a url, relative or absolute.', // @translate
+                    'as_key_value' => true,
+                ],
+                'attributes' => [
+                    'id' => 'advancedsearch_redirect_itemset_page_url',
+                    'placeholder' => '151 = events', // @translate
                 ],
             ])
         ;
     }
 
-    public function setSettings(AbstractSettings $settings): self
-    {
-        $this->settings = $settings;
-        return $this;
-    }
-
     public function setSearchConfigs(array $searchConfigs): self
     {
         $this->searchConfigs = $searchConfigs;
-        return $this;
-    }
-
-    public function setDefaultSearchFields(array $defaultSearchFields): self
-    {
-        $this->defaultSearchFields = $defaultSearchFields;
         return $this;
     }
 }

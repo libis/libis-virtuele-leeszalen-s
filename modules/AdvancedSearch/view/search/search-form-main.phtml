@@ -21,14 +21,34 @@ if (!$formId) {
 // Move buttons reset and submit outside of the form.
 $reset = null;
 $submit = null;
-if ($form->has('reset')) {
-    $reset = $form->get('reset');
-    $form->remove('reset');
+if ($form->has('form-reset')) {
+    $reset = $form->get('form-reset');
+    $reset
+        ->setAttribute('form', $formId);
+    $form->remove('form-reset');
 }
 if ($form->has('submit')) {
     $submit = $form->get('submit');
+    $submit
+        ->setAttribute('form', $formId);
     $form->remove('submit');
 }
+
+// To avoid to display all advanced search filters, so the js just add new ones:
+// TODO This new mechanism requires to update the js.
+/** @var \Laminas\Form\Fieldset $filters */
+/*
+$filters = $form->get('filter');
+if ($filters) {
+    $defaultCount = (int) $filters->getAttribute('data-count-default');
+    $i = 0;
+    foreach ($filters->getFieldsets() as $name => $element) {
+        if (++$i > max($defaultCount, count($params['filter']))) {
+            $filters->remove($name);
+        }
+    }
+}
+*/
 ?>
 
 <div id="advanced-search-form-wrapper">

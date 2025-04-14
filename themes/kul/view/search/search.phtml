@@ -114,13 +114,7 @@ $this->headScript()->appendFile($assetUrl('js/search.js', 'AdvancedSearch'), 'te
     <div class="col-xs-12 col-md-4">
         <div class="kul-card-color card card-gray">
             <div class="card-body">
-           
-            <?= $partial('search/facets-list', [
-                'searchConfig' => $searchConfig,
-                'query' => $query,
-                'response' => $response,
-                'itemSet' => $itemSet,
-            ]) ?>
+                <?= $partial('search/facets-list') ?>
             </div>
         </div>
     </div>

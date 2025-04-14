@@ -36,11 +36,11 @@ $second = $this->resourcePageBlocks($item, 'second')->hasBlocks();
       <?php else:?>
         <span class="breadcrumb-item">
           <?php if(str_contains($site->url(), "film-photonovel")): ?>
-            <a href="<?php echo $site->url()."/".$translate('search')."_FPN";?>"><?= $translate('Search') ?></a>  
+            <a href="<?php echo $site->url()."/".strtolower($translate('Search'))."_FPN";?>"><?= $translate('Search') ?></a>  
           <?php elseif(str_contains($site->url(), "exofficina")): ?>
-            <a href="<?php echo $site->url()."/zoeken_EO";?>"><?= $translate('Search') ?></a>  
+            <a href="<?php echo $site->url()."/".strtolower($translate('Search'))."_EO";?>"><?= $translate('Search') ?></a>  
           <?php elseif(str_contains($site->url(), "graphicnovels")): ?>
-            <a href="<?php echo $site->url()."/".$translate('search')."_GN";?>"><?= $translate('Search') ?></a>  
+            <a href="<?php echo $site->url()."/".strtolower($translate('Search'))."_GN";?>"><?= $translate('Search') ?></a>  
           <?php endif; ?>        
         </span>    
       <?php endif;?>

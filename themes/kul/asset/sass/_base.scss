@@ -32,6 +32,7 @@
             background-color: rgba(0, 0, 0, .04);
             padding: 9px 12px 9px 8px;
             margin-right: 9px;
+            cursor: pointer;
         }
         .facet-active::after {
             content: "x";

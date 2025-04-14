@@ -76,10 +76,10 @@ endif;
         <?php if ($displayButtonReset || $displayButtonSubmit): ?>
             <div class="facets-actions facets-actions-top">
                 <?php if ($displayButtonSubmit): ?>
-                    <input id="facets-apply" type="submit" value="<?= $escape($translate($labelSubmit)) ?>" class="btn btn-ghost-inv"/>
+                    <input id="facets-apply" type="submit" value="<?= $escape($translate($labelSubmit)) ?>" class="btn "/>
                 <?php endif; ?>
                 <?php if ($displayButtonReset): ?>
-                    <input id="facets-reset" type="reset" value="<?= $escape($translate($labelReset)) ?>" class="btn btn-ghost-inv"/>
+                    <a class="btn btn-primary " href="<?= $searchConfig->siteUrl()?>"><?= $escape($translate($labelReset)) ?></a>
                 <?php endif; ?>
             </div>
         <?php endif; ?>

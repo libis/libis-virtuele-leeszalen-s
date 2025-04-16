@@ -1,23 +1,18 @@
 <?php
-$itemMedia = $resource->media();
+$media = $resource;
+$mediaType = $media->mediaType();
 $translate = $this->plugin('translate');
-foreach ($itemMedia as $media):
-    if($media->mediaType() == "application/pdf") :
-        $sortedMedia = [];
-        $file = ["media" => $media];
-        array_push($sortedMedia, $file);
-        ?>
-        <div class="lightbox-wrapper">
-            <?= $this->lightGalleryOutput($sortedMedia); ?>
-           <?php $thumbnail = $media->thumbnailUrl('medium'); ?>
-            <span class="pdf-thumbnail-item" data-thumbnail="<?= $thumbnail; ?>" data-pdf="<?= $media->originalUrl() ?>" data-pdf-text="<?= $translate("Open the pdf") ?>"></span>
-        </div>
-    <?php else: ?>
-        <div class="media-embeds w-100">
-            <?php echo $media->render(); ?>
-        </div>
-    <?php endif;?>
-<?php endforeach; ?>
+if($mediaType == "application/pdf") :?>
+    <div class="lightbox-wrapper">
+        <?= $this->lightGalleryOutput([['media' => $media]]); ?>
+        <?php $thumbnail = $media->thumbnailUrl('medium'); ?>
+        <span class="pdf-thumbnail-item" data-thumbnail="<?= $thumbnail; ?>" data-pdf="<?= $media->originalUrl() ?>" data-pdf-text="<?= $translate("Open the pdf") ?>"></span>
+    </div>
+<?php else: ?>
+    <div class="media-embeds w-100">
+        <?php echo $media->render(); ?>
+    </div>
+<?php endif;?>
 
 <script>
   window.addEventListener('load', () => {

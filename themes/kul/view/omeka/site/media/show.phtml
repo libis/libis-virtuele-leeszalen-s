@@ -16,8 +16,14 @@ $main = $this->resourcePageBlocks($media, 'main')->hasBlocks();
       <span class="breadcrumb-item">
           <a href="<?php echo $site->url();?>">Home</a>
       </span>
-        <span class="breadcrumb-item">
-          <a href="<?php echo $site->url()."/".$translate('search');?>"><?= $translate('Search') ?></a>          
+      <span class="breadcrumb-item">
+          <?php if(str_contains($site->url(), "film-photonovel")): ?>
+            <a href="<?php echo $site->url()."/".strtolower($translate('Search'))."_FPN";?>"><?= $translate('Search') ?></a>  
+          <?php elseif(str_contains($site->url(), "exofficina")): ?>
+            <a href="<?php echo $site->url()."/".strtolower($translate('Search'))."_EO";?>"><?= $translate('Search') ?></a>  
+          <?php elseif(str_contains($site->url(), "graphicnovels")): ?>
+            <a href="<?php echo $site->url()."/".strtolower($translate('Search'))."_GN";?>"><?= $translate('Search') ?></a>  
+          <?php endif; ?>        
         </span>    
       <span class="breadcrumb-item active">
         <?php echo $media->item()->displayTitle(); ?>

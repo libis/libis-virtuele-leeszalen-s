@@ -37,9 +37,9 @@ if (isset($displayParts['per_page']) && $perPages = $searchConfig->subSetting('p
 }
 ?>
 
-<?php if (isset($displayParts['search_filters'])): ?>
+<?php /* if (isset($displayParts['search_filters'])): ?>
     <?= $searchConfig->renderSearchFilters($query, ['template' => 'common/search-filters-links']) ?>
-<?php endif; ?>
+<?php endif; */?>
 
 <?php if (isset($displayParts['paginator'])): ?>
 <div class="search-results-count row" style="width: 100%;">

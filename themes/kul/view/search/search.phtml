@@ -190,7 +190,7 @@ $this->headScript()->appendFile($assetUrl('js/search.js', 'AdvancedSearch'), 'te
                         <?php else: ?>
                         <?php if (in_array($searchConfig->subSetting('display', 'search_filters', 'header'), ['header', 'both'])): ?>
                         <div class="search-results-part search-results-header">
-                            <?= $this->searchingFilters($searchConfig, $query, ['template' => 'common/search-filters-links']) ?>
+                            
                         </div>
                         <?php endif; ?>
                         <?= $translate('Your query returned no results') ?>

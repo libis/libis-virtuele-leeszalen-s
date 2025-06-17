@@ -24,7 +24,7 @@ endif;
 ?>
 
 <ul class="search-facet-items">
-    <?php foreach (array_slice($facetValues,0,8) as $facetValue):
+    <?php foreach ($facetValues as $facetValue):
         $escapedValue = $escapeAttr($facetValue['value']);
         $escapedId = $name . '[]' . $escapedValue;
         $label = $displayCount
@@ -36,7 +36,7 @@ endif;
         <label for="<?= $escapedId ?>"><?= $label ?></label>
     </li>
     <?php endforeach; ?>
-    <?php if(sizeof($facetValues)>8):?>                
+    <?php /* if(sizeof($facetValues)>8):?>                
         <div class="more-link"><a class="has-text-grey" href=""><i class="fas fa-plus-square"></i><span><?php echo $more;?></span></a></div>
         <div class="more-data" style="display:none;">
             <?php foreach (array_slice($facetValues,8) as $facetValue):
@@ -53,5 +53,5 @@ endif;
             <?php endforeach; ?>
             <div class="less-link"><a class="has-text-grey" href=""><i class="fas fa-minus-square"></i><span><?php echo $less;?></span></a></div>
         </div> 
-    <?php endif;?>    
+    <?php endif;*/?>    
 </ul>

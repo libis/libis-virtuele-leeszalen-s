@@ -71,3 +71,37 @@
         display: none;
     }
   }
+
+.search-page {
+    .search-results {
+        .resource-list.search-results-list.grid {
+            .resource.col-md-6 {
+                width: 46%;
+
+                .card {
+                    width: 100%;
+                }
+            }
+        }
+    }
+}
+
+.item-blue-card {
+    justify-content: flex-end;
+}
+
+@media screen and (max-width: 768px) {
+    .search-page {
+        .search-results {
+            .resource-list.search-results-list.grid {
+                .resource.col-xs-12 {
+                    width: 100%;
+
+                    .card {
+                        width: 100%;
+                    }
+                }
+            }
+        }
+    }
+}

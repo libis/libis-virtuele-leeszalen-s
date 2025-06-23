@@ -45,6 +45,8 @@ $setting = $plugins->get(isset($site) ? 'siteSetting' : 'setting');
 
 $siteSlug = isset($site) ? $site->slug() : null;
 
+$siteUrl = isset($site) ? $site->url() : null;
+
 $filterLocale = (bool) $setting('filter_locale_values');
 $lang = $plugins->get('lang')();
 $langValue = $filterLocale ? [$lang, ''] : null;
@@ -88,17 +90,44 @@ $thumbnailType = $searchConfig->subSetting('results', 'thumbnail_type', 'medium'
         $heading = $headingTerm ? $resource->value($headingTerm, ['default' => $untitled, 'lang' => $langValue]) : $resource->displayTitle($untitled, $langValue);
         $body = $bodyTerm ? $resource->value($bodyTerm, ['lang' => $langValue, 'default' => '']) : $resource->displayDescription(null, $langValue);
         ?>
-    <li class="resource <?= $resourceType ?>">
-        <?php $resourceThumbnail = $thumbnail($resource, $thumbnailType); ?>
-        <div class="resource-thumbnail<?= $resourceThumbnail ? '' : ($allThumbnail ? ' default-thumbnail' : '') ?>" style="border: solid #d4e7f3;">
-            <?= $hyperlink->raw($resourceThumbnail ?: $defaultThumbnail, $resourceUrl, ['class' => 'resource-link']) ?>
-        </div>
-        <div class="resource-metadata" style="text-align:center;">
-            <h4><?= $hyperlink->raw($escapeValueOrGetHtml($heading), $resourceUrl, ['class' => 'resource-link']) ?></h4>
-            <div class="description">
-                <?= $body ?>
+    <li class="resource <?= $resourceType ?> <?= !str_contains($siteUrl, 'exofficina') ? 'col-xs-12 col-md-6 item-blue-card' : ''; ?>">
+        <?php if(!str_contains($siteUrl, "exofficina")): ?>
+            <?php 
+                $media = $resource->media();
+                if($media):
+                    if(sizeof($resources) <= 2):
+                        $altText = $media[0]->altText();
+                        $mediaurl = str_replace('http:', '', $media[0]->thumbnailUrl('large'));
+                    else:
+                        $altText = $media[0]->altText();
+                        $mediaurl = str_replace('http:', '', $media[0]->thumbnailUrl('medium'));
+                    endif;
+                else:
+                    $mediaurl = "";
+                endif;
+            ?>
+            <div class="card card-gray">
+                <?php if($mediaurl):?>
+                    <div class="card-img-top" style="background-image: url(<?= $mediaurl;?>)">&nbsp;</div>
+                <?php endif;?>
+                <div class="card-body">
+                    <h2>
+                        <?php echo $resource->value('dcterms:title');?>
+                    </h2>
+                </div>
             </div>
-        </div>
+        <?php else: ?>
+            <?php $resourceThumbnail = $thumbnail($resource, $thumbnailType); ?>
+            <div class="resource-thumbnail<?= $resourceThumbnail ? '' : ($allThumbnail ? ' default-thumbnail' : '') ?>" style="border: solid #d4e7f3;">
+                <?= $hyperlink->raw($resourceThumbnail ?: $defaultThumbnail, $resourceUrl, ['class' => 'resource-link']) ?>
+            </div>
+            <div class="resource-metadata" style="text-align:center;">
+                <h4><?= $hyperlink->raw($escapeValueOrGetHtml($heading), $resourceUrl, ['class' => 'resource-link']) ?></h4>
+                <div class="description">
+                    <?= $body ?>
+                </div>
+            </div>
+        <?php endif; ?>
     </li>
     <?php endforeach; ?>
 </ul>

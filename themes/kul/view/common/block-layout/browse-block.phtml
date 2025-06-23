@@ -2,7 +2,7 @@
 $translate = $this->plugin('translate');
 $thumbnailHelper = $this->plugin('thumbnail');
 $locale = array(
-  "en-Us" => "en",
+  "en-US" => "en",
   "nl-NL" => "nl",
 );
 $lang = $locale[$this->lang()];
@@ -68,7 +68,7 @@ $sitename = $block->page()->site()->url();
           endif;
           $url = $resource->url();
         ?>
-        <div class="col-xs-12 col-md-<?= $block->dataValue('columns'); ?>">
+        <div class="col-xs-12 col-md-<?= $block->dataValue('columns'); ?> item-blue-card">
           <?php if(str_contains($sitename, "film-photonovel")): ?>
             <a href="<?= $sitename."/".$translate('search') ."_FPN?facet%5Bdcterms_ispartof%5D%5B0%5D=" .$resource->title();?>">
           <?php elseif(str_contains($sitename, "exofficina")): ?>

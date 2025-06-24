@@ -106,7 +106,7 @@ $thumbnailType = $searchConfig->subSetting('results', 'thumbnail_type', 'medium'
                     $mediaurl = "";
                 endif;
             ?>
-            <div class="card card-gray">
+            <a href="<?= $resourceUrl?>" class="card card-gray">
                 <?php if($mediaurl):?>
                     <div class="card-img-top" style="background-image: url(<?= $mediaurl;?>)">&nbsp;</div>
                 <?php endif;?>
@@ -115,7 +115,7 @@ $thumbnailType = $searchConfig->subSetting('results', 'thumbnail_type', 'medium'
                         <?php echo $resource->value('dcterms:title');?>
                     </h2>
                 </div>
-            </div>
+            </a>
         <?php else: ?>
             <?php $resourceThumbnail = $thumbnail($resource, $thumbnailType); ?>
             <div class="resource-thumbnail<?= $resourceThumbnail ? '' : ($allThumbnail ? ' default-thumbnail' : '') ?>" style="border: solid #d4e7f3;">
